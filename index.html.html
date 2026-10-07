@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>鈑金・塗装 見積りツール</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="見積りツール">
+<meta name="theme-color" content="#1a1d21">
+<link id="apple-touch-icon" rel="apple-touch-icon">
+<link id="pwa-icon" rel="icon" type="image/png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+:root{
+  --bg:#1a1d21;--surface:#232830;--surface2:#2c323b;--surface3:#353c46;
+  --border:#3a414b;--text:#eef1f4;--muted:#90989f;
+  --accent:#2f6feb;--accent-soft:rgba(47,111,235,.20);--accent2:#0ea5e9;
+  --positive:#5ec98f;--on-accent:#fff;--radius:10px;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Hiragino Sans','Noto Sans JP',sans-serif;}
+body{padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);}
+
+/* Layout */
+.eyebrow{font-size:11px;letter-spacing:.18em;color:var(--accent);font-weight:700;text-transform:uppercase;}
+.title-row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;border-bottom:2px solid var(--surface3);padding-bottom:14px;}
+.title-row h1{font-size:20px;font-weight:900;letter-spacing:.04em;}
+.title-row h1 span{color:var(--accent);}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.tab-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .15s;}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
+.layout{display:grid;grid-template-columns:1.1fr 1.5fr;gap:16px;align-items:start;}
+@media(max-width:900px){.layout{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+.card-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.bar{display:inline-block;width:3px;height:14px;background:var(--accent);border-radius:2px;flex-shrink:0;}
+
+/* Form */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.fgrid{grid-template-columns:1fr;}}
+.span2{grid-column:1/-1;}
+.field{min-width:0;overflow:hidden;}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500;}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 10px;font-size:16px;font-family:inherit;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent2);}
+.field input[type=date]{-webkit-appearance:none;appearance:none;}
+
+/* Buttons */
+.check-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.check-sub{margin-top:8px;padding:8px 0 0 12px;border-left:2px solid var(--border);}
+.sub-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:block;}
+.selbtn{padding:8px 14px;border-radius:8px;border:2px solid var(--border);background:var(--surface2);color:var(--text);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
+.selbtn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+.cartype{display:flex;gap:8px;}
+.cartype .selbtn{flex:1;text-align:center;}
+.rate-hint{font-size:11px;color:var(--muted);margin-top:6px;text-align:center;}
+
+/* Panel map */
+.panel-wrap{overflow:hidden;}
+.panel-map{
+  display:grid;
+  grid-template-columns:1fr 1.3fr 1fr;
+  grid-template-rows:42px 58px 80px 80px 80px 58px 42px;
+  grid-template-areas:
+    "fbumper fbumper fbumper"
+    "hood hood hood"
+    "lfender roof rfender"
+    "lfdoor roof rfdoor"
+    "lrdoor roof rrdoor"
+    "lqpanel trunk rqpanel"
+    "rbumper rbumper rbumper";
+  gap:5px;max-width:320px;margin:0 auto;
+}
+.panel-btn{
+  position:relative;border:1px solid var(--border);background:var(--surface2);color:var(--text);
+  border-radius:8px;cursor:pointer;font-family:inherit;font-size:10px;line-height:1.3;
+  white-space:pre-line;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:2px;transition:all .12s;min-width:0;
+}
+.panel-btn:active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.panel-badge{position:absolute;top:-6px;right:-6px;background:var(--accent);color:var(--on-accent);border-radius:999px;min-width:17px;height:17px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+.map-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:8px;}
+
+/* Item rows */
+.items-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.items-header{display:grid;grid-template-columns:minmax(90px,1.2fr) minmax(80px,.9fr) 52px 52px minmax(90px,1fr) 54px 52px 80px 46px 90px 30px;gap:5px;align-items:center;font-size:10px;color:var(--muted);font-weight:700;padding:0 4px 8px;border-bottom:1px solid var(--border);margin-bottom:6px;min-width:740px;}
+.item-row{display:grid;grid-template-columns:minmax(90px,1.2fr) minmax(80px,.9fr) 52px 52px minmax(90px,1fr) 54px 52px 80px 46px 90px 30px;gap:5px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--surface3);min-width:740px;}
+.item-row:last-child{border-bottom:none;}
+.item-row input,.item-row select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px;font-size:15px;font-family:inherit;}
+.item-row input:focus,.item-row select:focus{outline:none;border-color:var(--accent2);}
+.row-amount{font-family:monospace;font-weight:700;text-align:right;font-size:13px;white-space:nowrap;}
+.row-del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;padding:4px;width:30px;}
+.row-del:active{color:var(--accent);}
+.qcheck{display:flex;align-items:center;justify-content:center;}
+.qcheck input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;}
+.row-desc{grid-column:1/-1;font-size:11px;color:var(--muted);padding:1px 4px 0;min-width:0;}
+
+/* Mobile item layout */
+@media(max-width:700px){
+  .items-scroll{overflow-x:visible;}
+  .items-header{display:none;}
+  .item-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--surface2);}
+  .item-row .col-part,.item-row .col-amt,.item-row .row-desc{grid-column:1/-1;}
+  .item-row .row-del{justify-self:start;}
+  .item-row .qcheck{justify-content:flex-start;}
+  .item-cell{display:flex;flex-direction:column;}
+  .cell-label{font-size:10px;color:var(--muted);margin-bottom:2px;}
+  .row-amount{text-align:left;font-size:14px;}
+}
+@media(min-width:701px){.cell-label{display:none;}}
+
+/* Totals */
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:24px 0;}
+.totals-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.tline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:5px 0;}
+.tline .val{font-family:monospace;color:var(--text);}
+.tline.grand{border-top:1px solid var(--border);margin-top:8px;padding-top:12px;font-size:15px;font-weight:700;color:var(--text);}
+.tline.grand .val{font-size:24px;font-weight:900;color:var(--accent);}
+.disc-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--surface3);margin-top:4px;}
+.disc-row label{font-size:12px;color:var(--muted);}
+
+/* Actions */
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.btn{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn:active{border-color:var(--accent2);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
+.btn-line{background:#06c755;border-color:#06c755;color:#fff;}
+.btn-add{background:transparent;border:1px dashed var(--border);color:var(--muted);width:100%;justify-content:center;margin-top:8px;}
+.btn-add:active{border-color:var(--accent2);color:var(--accent2);}
+.msg{font-size:12px;color:var(--positive);margin-top:8px;min-height:18px;}
+
+/* History */
+.hist-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.hist-info b{font-size:13px;}
+.hist-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+.hist-total{font-family:monospace;font-weight:900;font-size:16px;color:var(--accent);white-space:nowrap;}
+.hist-actions{display:flex;gap:6px;}
+
+/* Settings */
+.sg{margin-bottom:18px;}
+.sg h3{font-size:11px;color:var(--accent2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+.sg-note{font-size:11px;color:var(--muted);margin:-4px 0 8px;line-height:1.6;}
+.install-tip{margin-top:20px;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+.install-tip h3{font-size:13px;margin-bottom:10px;}
+.install-tip ol{padding-left:18px;font-size:12px;color:var(--muted);line-height:2.2;}
+.install-tip ol b{color:var(--text);}
+.install-tip p{font-size:11px;color:var(--muted);margin-top:8px;}
+
+/* Tab panels */
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.tab-panel-layout{display:none;}
+.tab-panel-layout.active{display:grid;grid-template-columns:1.1fr 1.5fr;gap:16px;align-items:start;}
+@media(max-width:900px){.tab-panel-layout.active{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="title-row">
+  <div>
+    <div class="eyebrow">Body &amp; Paint Estimator</div>
+    <h1>鈑金<span>・</span>塗装 見積り計算ツール</h1>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="create">📝 見積り作成</button>
+    <button class="tab-btn" data-tab="history">🕐 履歴</button>
+    <button class="tab-btn" data-tab="settings">⚙️ 設定</button>
+  </div>
+</div>
+
+<!-- CREATE TAB -->
+<div id="tab-create" class="tab-panel-layout active">
+  <!-- LEFT -->
+  <div>
+    <div class="card">
+      <div class="card-title"><span class="bar"></span>顧客・車両情報</div>
+      <div class="fgrid">
+        <div class="field span2">
+          <label>車種区分（工賃の基準）</label>
+          <div class="cartype">
+            <button class="selbtn on" id="btn-domestic" onclick="setCarType('国産車')">国産車</button>
+            <button class="selbtn" id="btn-import" onclick="setCarType('輸入車')">輸入車</button>
+          </div>
+          <div class="rate-hint" id="rate-hint">適用工賃：¥9,800／時間</div>
+        </div>
+        <div class="field"><label>お客様名</label><input id="c-name" placeholder="山田 太郎" oninput="updateCust()"></div>
+        <div class="field"><label>車種</label><input id="c-car" placeholder="プリウス" oninput="updateCust()"></div>
+        <div class="field"><label>登録番号</label><input id="c-plate" placeholder="品川 300 あ 12-34" oninput="updateCust()"></div>
+        <div class="field"><label>車体色</label><input id="c-color" placeholder="パールホワイト" oninput="updateCust()"></div>
+        <div class="field span2"><label>見積日</label><input type="date" id="c-date" oninput="updateCust()"></div>
+        <div class="field span2"><label>担当者</label><input id="c-staff" placeholder="担当者名" oninput="updateCust()"></div>
+        <div class="field span2">
+          <label>代車</label>
+          <div class="check-group">
+            <button class="selbtn" id="lb-yes" onclick="setLoaner(true)">代車あり</button>
+            <button class="selbtn" id="lb-no" onclick="setLoaner(false)">代車なし</button>
+          </div>
+          <div id="loaner-sub" style="display:none" class="check-sub">
+            <span class="sub-label">代車の種類</span>
+            <div class="check-group">
+              <button class="selbtn" data-lk="loanerNormal" onclick="setLoanerKind(this)">普通車</button>
+              <button class="selbtn" data-lk="loanerKei" onclick="setLoanerKind(this)">軽自動車</button>
+              <button class="selbtn" data-lk="loanerHeightLimit" onclick="setLoanerKind(this)">高さ制限</button>
+              <button class="selbtn" data-lk="loanerRider" onclick="setLoanerKind(this)">代車特約</button>
+            </div>
+          </div>
+        </div>
+        <div class="field span2">
+          <label>お支払い区分</label>
+          <div class="check-group">
+            <button class="selbtn" data-pk="paySelf" onclick="setPayKind(this)">自費</button>
+            <button class="selbtn" data-pk="payVehicle" onclick="setPayKind(this)">車両保険</button>
+            <button class="selbtn" data-pk="payProperty" onclick="setPayKind(this)">対物保険</button>
+          </div>
+        </div>
+        <div class="field span2"><label>備考</label><textarea id="c-note" rows="2" placeholder="例：部品入荷後に作業日程をご連絡します" oninput="updateCust()"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="bar"></span>パーツマップ（タップで追加）</div>
+      <div class="panel-wrap">
+        <div class="panel-map" id="panel-map"></div>
+      </div>
+      <div class="map-hint">タップすると作業項目が追加されます</div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div>
+    <div class="card">
+      <div class="card-title"><span class="bar"></span>作業項目</div>
+      <div class="items-scroll">
+        <div class="items-header">
+          <div>部位</div><div>作業区分</div><div>鈑金(h)</div><div>塗装(h)</div>
+          <div>塗装タイプ</div><div>クォーター</div><div>付属品(h)</div>
+          <div>部品代(¥)</div><div>数量</div><div>金額</div><div></div>
+        </div>
+        <div id="items-list"></div>
+      </div>
+      <div id="items-empty" class="empty">パーツマップをタップするか、下のボタンで行を追加してください。</div>
+      <button class="btn btn-add" onclick="addItem()">＋ 行を追加</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="bar"></span>集計</div>
+      <div class="totals-box">
+        <div class="tline"><span>作業小計</span><span class="val" id="t-sub">¥0</span></div>
+        <div class="tline"><span id="t-exp-label">諸経費（5%）</span><span class="val" id="t-exp">¥0</span></div>
+        <div class="tline"><span id="t-tax-label">消費税（10%）</span><span class="val" id="t-tax">¥0</span></div>
+        <div class="disc-row">
+          <label><input type="checkbox" id="disc10" onchange="recalc()" style="margin-right:6px;accent-color:var(--accent)">10%値引き</label>
+          <span class="val" id="t-disc10" style="color:var(--muted)">－¥0</span>
+        </div>
+        <div class="disc-row">
+          <label style="white-space:nowrap;font-size:12px;color:var(--muted)">自由値引き（¥）</label>
+          <input type="number" id="disc-free" min="0" step="100" placeholder="0" oninput="recalc()" style="width:100px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:13px;color:var(--text);font-family:inherit;text-align:right;margin-left:8px;">
+          <span class="val" id="t-discfree" style="color:var(--muted);margin-left:8px;">－¥0</span>
+        </div>
+        <div class="tline grand"><span>合計金額（税込）</span><span class="val" id="t-grand">¥0</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="saveEst()">💾 履歴に保存</button>
+        <button class="btn btn-line" onclick="lineShare()">💬 LINEで送る</button>
+        <button class="btn" onclick="dlFile()">🖨 見積書を共有・保存</button>
+        <button class="btn" onclick="copyRich()">📋 見た目付きコピー</button>
+        <button class="btn" onclick="copyText()">📄 テキストコピー</button>
+        <button class="btn" onclick="resetEst()">🔄 新規見積り</button>
+      </div>
+      <div class="msg" id="save-msg"></div>
+      <div class="msg" id="print-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY TAB -->
+<div id="tab-history" class="tab-panel">
+  <div class="card">
+    <div class="card-title"><span class="bar"></span>保存済み見積り一覧</div>
+    <div id="history-list"></div>
+    <div id="history-empty" class="empty">保存された見積りはまだありません。</div>
+  </div>
+</div>
+
+<!-- SETTINGS TAB -->
+<div id="tab-settings" class="tab-panel">
+  <div class="card">
+    <div class="card-title"><span class="bar"></span>単価・店舗情報設定</div>
+    <div class="sg"><h3>店舗情報</h3>
+      <div class="fgrid">
+        <div class="field"><label>店舗名</label><input id="s-shopName" oninput="updateSettings()"></div>
+        <div class="field"><label>電話番号</label><input id="s-shopTel" placeholder="078-000-0000" oninput="updateSettings()"></div>
+        <div class="field span2"><label>所在地</label><input id="s-shopAddress" oninput="updateSettings()"></div>
+        <div class="field span2"><label>登録番号（インボイス）</label><input id="s-shopRegNo" oninput="updateSettings()"></div>
+      </div>
+    </div>
+    <div class="sg"><h3>工賃（円／時間）</h3>
+      <div class="fgrid">
+        <div class="field"><label>国産車</label><input type="number" step="100" id="s-domestic" oninput="updateSettings()"></div>
+        <div class="field"><label>輸入車</label><input type="number" step="100" id="s-import" oninput="updateSettings()"></div>
+      </div>
+    </div>
+    <div class="sg"><h3>塗装材料費率（%）</h3>
+      <div class="sg-note">塗料代 ＝ 塗装工賃 × 材料費率</div>
+      <div class="fgrid">
+        <div class="field"><label>グロス・メタリック・2コートパール</label><input type="number" step="1" id="s-pctLow" oninput="updateSettings()"></div>
+        <div class="field"><label>3コートパール・カラークリアー</label><input type="number" step="1" id="s-pctHigh" oninput="updateSettings()"></div>
+      </div>
+    </div>
+    <div class="sg"><h3>カラークリアー加算工数（h）</h3>
+      <div class="sg-note">バンパーは自動+0.2h。</div>
+      <div class="fgrid">
+        <div class="field"><label>クォーター含む</label><input type="number" step="0.1" id="s-qEx" oninput="updateSettings()"></div>
+        <div class="field"><label>クォーター含まない</label><input type="number" step="0.1" id="s-noqEx" oninput="updateSettings()"></div>
+      </div>
+    </div>
+    <div class="sg"><h3>諸経費・税率（%）</h3>
+      <div class="fgrid">
+        <div class="field"><label>諸経費率</label><input type="number" step="0.5" id="s-expRate" oninput="updateSettings()"></div>
+        <div class="field"><label>消費税率</label><input type="number" step="0.5" id="s-taxRate" oninput="updateSettings()"></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="saveSettings()">💾 この設定を保存</button>
+    </div>
+    <div class="msg" id="settings-msg"></div>
+
+    <div class="install-tip">
+      <h3>📲 ホーム画面に追加する方法（iPhone / iPad）</h3>
+      <ol>
+        <li>Safariでこのページを開く</li>
+        <li>画面下の <b>共有ボタン（□↑）</b> をタップ</li>
+        <li><b>「ホーム画面に追加」</b> を選択</li>
+        <li>右上の <b>「追加」</b> をタップ</li>
+      </ol>
+      <p>追加後はアイコンからアプリのように起動できます。オフラインでも動作します。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+const DEF_SETTINGS = {
+  shopName:'株式会社AUTO REPAIR KOBE', shopAddress:'', shopTel:'', shopRegNo:'',
+  laborRateDomestic:9800, laborRateImport:12000,
+  paintMaterialPercentLow:38, paintMaterialPercentHigh:42,
+  quarterPanelExtraHours:2.1, noQuarterPanelExtraHours:1.2,
+  expenseRate:5, taxRate:10,
+};
+let settings = {...DEF_SETTINGS};
+let customer = newCust();
+let items = [];
+let history = [];
+let idSeq = 0;
+
+const PANEL_PARTS = [
+  {area:'fbumper',name:'フロントバンパー',label:'フロント\nバンパー'},
+  {area:'hood',name:'ボンネット',label:'ボンネット'},
+  {area:'lfender',name:'左フロントフェンダー',label:'左フロント\nフェンダー'},
+  {area:'rfender',name:'右フロントフェンダー',label:'右フロント\nフェンダー'},
+  {area:'roof',name:'ルーフ',label:'ルーフ'},
+  {area:'lfdoor',name:'左フロントドア',label:'左フロント\nドア'},
+  {area:'rfdoor',name:'右フロントドア',label:'右フロント\nドア'},
+  {area:'lrdoor',name:'左リアドア',label:'左リア\nドア'},
+  {area:'rrdoor',name:'右リアドア',label:'右リア\nドア'},
+  {area:'lqpanel',name:'左クォーターパネル',label:'左クォーター\nパネル'},
+  {area:'rqpanel',name:'右クォーターパネル',label:'右クォーター\nパネル'},
+  {area:'trunk',name:'トランク/バックドア',label:'トランク/\nバックドア'},
+  {area:'rbumper',name:'リアバンパー',label:'リア\nバンパー'},
+];
+const WORK_TYPES = ['鈑金','塗装','鈑金+塗装','部品交換','調整・取付','その他'];
+const PAINT_TYPES = ['グロス','メタリック','2コートパール','3コートパール','カラークリアー'];
+
+function genId(){ return `i-${Date.now()}-${++idSeq}`; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmt(n){ return '¥'+Math.round(n||0).toLocaleString('ja-JP'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function newCust(){
+  return {name:'',car:'',plate:'',color:'',date:todayStr(),staff:'',note:'',carType:'国産車',
+    loanerCar:null,loanerNormal:false,loanerKei:false,loanerHeightLimit:false,loanerRider:false,
+    paySelf:false,payVehicle:false,payProperty:false};
+}
+function newItem(part='',isQ=false){
+  return {id:genId(),part,type:'鈑金+塗装',panelHours:0,paintHours:0,paintType:'グロス',
+    includesQuarterPanel:isQ,accessoryHours:0,partsCost:0,qty:1,note:''};
+}
+
+// ─── Calc ─────────────────────────────────────────────────
+function calcRow(it){
+  const rate = customer.carType==='輸入車'?(settings.laborRateImport||0):(settings.laborRateDomestic||0);
+  const ph = +it.panelHours||0, bh = +it.paintHours||0, ah = +it.accessoryHours||0;
+  const isCC = it.paintType==='カラークリアー';
+  const isBump = it.part&&it.part.includes('バンパー');
+  let ex = 0;
+  if(isCC){ ex = isBump?0.2:it.includesQuarterPanel?(+settings.quarterPanelExtraHours||0):(+settings.noQuarterPanelExtraHours||0); }
+  const tph = bh+ex;
+  const pct = (it.paintType==='3コートパール'||isCC)?(+settings.paintMaterialPercentHigh||0):(+settings.paintMaterialPercentLow||0);
+  const amount = ((ph*rate)+(tph*rate)+(tph*rate*(pct/100))+(ah*rate)+(+it.partsCost||0))*(+it.qty||0);
+  const dp=[];
+  if(ph) dp.push(`鈑金 ${ph}h×${fmt(rate)}`);
+  if(tph>0){ let s=`塗装(${it.paintType}) ${tph}h×${fmt(rate)}`; if(ex)s+=`(+${ex}h)`; dp.push(s); dp.push(`塗料代${pct}%`); }
+  if(ah) dp.push(`付属品脱着 ${ah}h×${fmt(rate)}`);
+  if(+it.partsCost) dp.push(`部品代 ${fmt(+it.partsCost)}`);
+  let desc = dp.join(' + ');
+  if(it.note) desc += desc?` ／ ${it.note}`:it.note;
+  return {amount, desc, rate};
+}
+
+function calcTotals(){
+  const sub = items.reduce((s,it)=>s+calcRow(it).amount,0);
+  const exp = sub*((+settings.expenseRate||0)/100);
+  const taxBase = sub+exp;
+  const tax = taxBase*((+settings.taxRate||0)/100);
+  const before = taxBase+tax;
+  const disc10 = document.getElementById('disc10').checked ? Math.round(before*.1):0;
+  const discFree = Math.round(+document.getElementById('disc-free').value||0);
+  return {sub, exp, tax, before, disc10, discFree, grand:before-disc10-discFree};
+}
+
+// ─── Render ───────────────────────────────────────────────
+function render(){
+  renderItems();
+  recalc();
+  renderPanelBadges();
+}
+
+function recalc(){
+  const t = calcTotals();
+  document.getElementById('t-sub').textContent  = fmt(t.sub);
+  document.getElementById('t-exp-label').textContent = `諸経費（${settings.expenseRate}%）`;
+  document.getElementById('t-exp').textContent  = fmt(t.exp);
+  document.getElementById('t-tax-label').textContent = `消費税（${settings.taxRate}%）`;
+  document.getElementById('t-tax').textContent  = fmt(t.tax);
+  document.getElementById('t-disc10').textContent = t.disc10>0?`－${fmt(t.disc10)}`:'－¥0';
+  document.getElementById('t-disc10').style.color = t.disc10>0?'var(--accent)':'var(--muted)';
+  document.getElementById('t-discfree').textContent = t.discFree>0?`－${fmt(t.discFree)}`:'－¥0';
+  document.getElementById('t-discfree').style.color = t.discFree>0?'var(--accent)':'var(--muted)';
+  document.getElementById('t-grand').textContent = fmt(t.grand);
+}
+
+function renderItems(){
+  const list = document.getElementById('items-list');
+  const empty = document.getElementById('items-empty');
+  list.innerHTML = '';
+  empty.style.display = items.length?'none':'block';
+
+  items.forEach(it => {
+    const {amount, desc} = calcRow(it);
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.innerHTML = `
+      <div class="item-cell col-part"><span class="cell-label">部位</span><input value="${esc(it.part)}" placeholder="部位名" data-id="${it.id}" data-f="part"></div>
+      <div class="item-cell"><span class="cell-label">作業区分</span><select data-id="${it.id}" data-f="type">${WORK_TYPES.map(t=>`<option${t===it.type?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="item-cell"><span class="cell-label">鈑金(h)</span><input type="number" step="0.5" min="0" value="${it.panelHours||''}" placeholder="0" data-id="${it.id}" data-f="panelHours"></div>
+      <div class="item-cell"><span class="cell-label">塗装(h)</span><input type="number" step="0.5" min="0" value="${it.paintHours||''}" placeholder="0" data-id="${it.id}" data-f="paintHours"></div>
+      <div class="item-cell"><span class="cell-label">塗装タイプ</span><select data-id="${it.id}" data-f="paintType">${PAINT_TYPES.map(t=>`<option${t===it.paintType?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="item-cell qcheck"><span class="cell-label">クォーター</span><input type="checkbox" ${it.includesQuarterPanel?'checked':''} data-id="${it.id}" data-f="includesQuarterPanel"></div>
+      <div class="item-cell"><span class="cell-label">付属品(h)</span><input type="number" step="0.5" min="0" value="${it.accessoryHours||''}" placeholder="0" data-id="${it.id}" data-f="accessoryHours"></div>
+      <div class="item-cell"><span class="cell-label">部品代(¥)</span><input type="number" step="100" min="0" value="${it.partsCost||''}" placeholder="0" data-id="${it.id}" data-f="partsCost"></div>
+      <div class="item-cell"><span class="cell-label">数量</span><input type="number" step="1" min="1" value="${it.qty||''}" placeholder="1" data-id="${it.id}" data-f="qty"></div>
+      <div class="item-cell col-amt"><span class="cell-label">金額</span><div class="row-amount">${fmt(amount)}</div></div>
+      <button class="row-del" data-del="${it.id}" title="削除">✕</button>
+      ${desc?`<div class="row-desc">${esc(desc)}</div>`:''}
+    `;
+    list.appendChild(div);
+  });
+
+  // Events
+  list.querySelectorAll('input,select').forEach(el => {
+    el.addEventListener('change', onItemChange);
+    el.addEventListener('input',  onItemChange);
+  });
+  list.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      items = items.filter(it=>it.id!==e.currentTarget.dataset.del);
+      render();
+    });
+  });
+}
+
+function onItemChange(e){
+  const el = e.currentTarget;
+  const id = el.dataset.id, f = el.dataset.f;
+  const it = items.find(i=>i.id===id);
+  if(!it) return;
+  if(el.type==='checkbox') it[f]=el.checked;
+  else if(['panelHours','paintHours','accessoryHours','partsCost','qty'].includes(f)) it[f]=+el.value||0;
+  else it[f]=el.value;
+  render();
+}
+
+function renderPanelBadges(){
+  PANEL_PARTS.forEach(p=>{
+    const btn = document.getElementById('pb-'+p.area);
+    if(!btn) return;
+    const cnt = items.filter(it=>it.part===p.name).length;
+    const badge = btn.querySelector('.panel-badge');
+    if(cnt>0){ if(badge) badge.textContent=cnt; else btn.insertAdjacentHTML('beforeend',`<span class="panel-badge">${cnt}</span>`); }
+    else if(badge) badge.remove();
+  });
+}
+
+function buildPanelMap(){
+  const map = document.getElementById('panel-map');
+  map.innerHTML = '';
+  PANEL_PARTS.forEach(p=>{
+    const btn = document.createElement('button');
+    btn.className='panel-btn'; btn.id='pb-'+p.area;
+    btn.style.gridArea=p.area;
+    btn.textContent=p.label;
+    btn.addEventListener('click',()=>{
+      const isQ=p.area==='lqpanel'||p.area==='rqpanel';
+      items.push(newItem(p.name,isQ));
+      render();
+    });
+    map.appendChild(btn);
+  });
+}
+
+// ─── Customer / Settings ──────────────────────────────────
+function updateCust(){
+  customer.name=document.getElementById('c-name').value;
+  customer.car=document.getElementById('c-car').value;
+  customer.plate=document.getElementById('c-plate').value;
+  customer.color=document.getElementById('c-color').value;
+  customer.date=document.getElementById('c-date').value;
+  customer.staff=document.getElementById('c-staff').value;
+  customer.note=document.getElementById('c-note').value;
+}
+function fillCustForm(){
+  document.getElementById('c-name').value=customer.name||'';
+  document.getElementById('c-car').value=customer.car||'';
+  document.getElementById('c-plate').value=customer.plate||'';
+  document.getElementById('c-color').value=customer.color||'';
+  document.getElementById('c-date').value=customer.date||todayStr();
+  document.getElementById('c-staff').value=customer.staff||'';
+  document.getElementById('c-note').value=customer.note||'';
+}
+function setCarType(t){
+  customer.carType=t;
+  document.getElementById('btn-domestic').classList.toggle('on',t==='国産車');
+  document.getElementById('btn-import').classList.toggle('on',t==='輸入車');
+  const rate=t==='輸入車'?settings.laborRateImport:settings.laborRateDomestic;
+  document.getElementById('rate-hint').textContent=`適用工賃：${fmt(rate)}／時間`;
+  render();
+}
+function setLoaner(v){
+  customer.loanerCar=v;
+  document.getElementById('lb-yes').classList.toggle('on',v===true);
+  document.getElementById('lb-no').classList.toggle('on',v===false);
+  document.getElementById('loaner-sub').style.display=v?'block':'none';
+}
+function setLoanerKind(btn){
+  ['loanerNormal','loanerKei','loanerHeightLimit','loanerRider'].forEach(k=>customer[k]=false);
+  document.querySelectorAll('[data-lk]').forEach(b=>b.classList.remove('on'));
+  customer[btn.dataset.lk]=true; btn.classList.add('on');
+}
+function setPayKind(btn){
+  ['paySelf','payVehicle','payProperty'].forEach(k=>customer[k]=false);
+  document.querySelectorAll('[data-pk]').forEach(b=>b.classList.remove('on'));
+  customer[btn.dataset.pk]=true; btn.classList.add('on');
+}
+function updateSettings(){
+  settings.shopName=document.getElementById('s-shopName').value;
+  settings.shopAddress=document.getElementById('s-shopAddress').value;
+  settings.shopTel=document.getElementById('s-shopTel').value;
+  settings.shopRegNo=document.getElementById('s-shopRegNo').value;
+  settings.laborRateDomestic=+document.getElementById('s-domestic').value||0;
+  settings.laborRateImport=+document.getElementById('s-import').value||0;
+  settings.paintMaterialPercentLow=+document.getElementById('s-pctLow').value||0;
+  settings.paintMaterialPercentHigh=+document.getElementById('s-pctHigh').value||0;
+  settings.quarterPanelExtraHours=+document.getElementById('s-qEx').value||0;
+  settings.noQuarterPanelExtraHours=+document.getElementById('s-noqEx').value||0;
+  settings.expenseRate=+document.getElementById('s-expRate').value||0;
+  settings.taxRate=+document.getElementById('s-taxRate').value||0;
+  recalc();
+  setCarType(customer.carType);
+}
+function fillSettingsForm(){
+  document.getElementById('s-shopName').value=settings.shopName||'';
+  document.getElementById('s-shopAddress').value=settings.shopAddress||'';
+  document.getElementById('s-shopTel').value=settings.shopTel||'';
+  document.getElementById('s-shopRegNo').value=settings.shopRegNo||'';
+  document.getElementById('s-domestic').value=settings.laborRateDomestic||'';
+  document.getElementById('s-import').value=settings.laborRateImport||'';
+  document.getElementById('s-pctLow').value=settings.paintMaterialPercentLow||'';
+  document.getElementById('s-pctHigh').value=settings.paintMaterialPercentHigh||'';
+  document.getElementById('s-qEx').value=settings.quarterPanelExtraHours||'';
+  document.getElementById('s-noqEx').value=settings.noQuarterPanelExtraHours||'';
+  document.getElementById('s-expRate').value=settings.expenseRate||'';
+  document.getElementById('s-taxRate').value=settings.taxRate||'';
+}
+
+// ─── Tabs ─────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const t=btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel,.tab-panel-layout').forEach(p=>p.classList.remove('active'));
+    const el=document.getElementById('tab-'+t);
+    if(el){ el.classList.add('active'); }
+    if(t==='history') renderHistory();
+  });
+});
+
+// ─── Actions ──────────────────────────────────────────────
+function addItem(){ items.push(newItem()); render(); }
+
+function showMsg(id,msg,ms=3500){
+  const el=document.getElementById(id);
+  el.textContent=msg;
+  setTimeout(()=>el.textContent='',ms);
+}
+
+function loanerSummary(){
+  if(!customer.loanerCar) return 'なし';
+  const d=[];
+  if(customer.loanerNormal)d.push('普通車');
+  if(customer.loanerKei)d.push('軽自動車');
+  if(customer.loanerHeightLimit)d.push('高さ制限');
+  if(customer.loanerRider)d.push('代車特約');
+  return 'あり'+(d.length?`（${d.join('、')}）`:'');
+}
+function paySummary(){
+  const p=[];
+  if(customer.paySelf)p.push('自費');
+  if(customer.payVehicle)p.push('車両保険');
+  if(customer.payProperty)p.push('対物保険');
+  return p.length?p.join('、'):'未選択';
+}
+
+function buildText(){
+  const D='━━━━━━━━━━━━━━';
+  const lines=['🚗 御 見 積 書',D,
+    `🏢 ${settings.shopName}`,settings.shopAddress||'',settings.shopTel?`TEL：${settings.shopTel}`:'',D,
+    `📅 見積日：${customer.date}`,`👤 お客様：${customer.name||'-'} 様`,
+    `🚙 車種：${customer.car||'-'}（${customer.carType}）`,`🔢 登録番号：${customer.plate||'-'}`,
+    `🎨 車体色：${customer.color||'-'}`,customer.staff?`👨‍🔧 担当：${customer.staff}`:'',
+    `🚐 代車：${loanerSummary()}`,`💳 支払区分：${paySummary()}`,D,'🔧 作業項目'];
+  if(!items.length) lines.push('（項目なし）');
+  else items.forEach(it=>{const b=calcRow(it);lines.push(`・${it.part||'-'}（${it.type}） 数量${it.qty}　${fmt(b.amount)}`);if(b.desc)lines.push(`    ${b.desc}`);});
+  const t=calcTotals();
+  lines.push(D,`作業小計　${fmt(t.sub)}`,`諸経費（${settings.expenseRate}%）　${fmt(t.exp)}`,`消費税（${settings.taxRate}%）　${fmt(t.tax)}`);
+  if(t.disc10>0)lines.push(`10%値引き　－${fmt(t.disc10)}`);
+  if(t.discFree>0)lines.push(`自由値引き　－${fmt(t.discFree)}`);
+  lines.push(D,`💰 合計金額（税込）：${fmt(t.grand)}`,D);
+  if(customer.note)lines.push(`📝 備考：${customer.note}`);
+  return lines.filter(l=>l!=='').join('\n');
+}
+
+async function copyText(){
+  const text=buildText();
+  const ok=await writeToClipboard(text,null);
+  showMsg('print-msg',ok?'テキストをコピーしました。LINEやメモに貼り付けできます。':'コピーに失敗しました。',6000);
+}
+async function writeToClipboard(text,html){
+  if(html&&navigator.clipboard&&window.ClipboardItem){
+    try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);return true;}catch(e){}
+  }
+  if(navigator.clipboard?.writeText){try{await navigator.clipboard.writeText(text);return true;}catch(e){}}
+  try{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:50%;left:50%;width:2px;height:2px;opacity:0;border:none;';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,99999);const ok=document.execCommand('copy');document.body.removeChild(ta);return ok;}catch(e){return false;}
+}
+async function copyRich(){
+  const t=buildText();
+  const t2=calcTotals();
+  const rows=items.map(it=>{const b=calcRow(it);return`<tr><td style="border:1px solid #d7dde6;padding:5px 8px;font-size:11px;">${esc(it.part)||'-'}</td><td style="border:1px solid #d7dde6;padding:5px 8px;font-size:11px;">${esc(it.type)}</td><td style="border:1px solid #d7dde6;padding:5px 8px;font-size:11px;">${esc(b.desc)||'-'}</td><td style="border:1px solid #d7dde6;padding:5px 8px;font-size:11px;text-align:center;">${it.qty}</td><td style="border:1px solid #d7dde6;padding:5px 8px;font-size:11px;text-align:right;">${fmt(b.amount)}</td></tr>`;}).join('')||'<tr><td colspan="5" style="padding:8px;text-align:center;">項目がありません</td></tr>';
+  const html=`<div style="font-family:'Hiragino Sans',sans-serif;color:#1f2733;font-size:12px;max-width:680px;"><div style="border-bottom:4px solid #2f6feb;padding-bottom:8px;margin-bottom:8px;"><div style="font-size:18px;font-weight:900;letter-spacing:6px;">御 見 積 書</div></div><table style="width:100%;border-collapse:collapse;background:#f4f6f9;border:1px solid #e4e9f0;margin-bottom:10px;"><tr><td style="padding:10px;line-height:1.8;vertical-align:top;"><b>${esc(customer.name)||'お客様'}</b> 様<br>車種：${esc(customer.car)||'-'}（${esc(customer.carType)}）<br>登録番号：${esc(customer.plate)||'-'}<br>車体色：${esc(customer.color)||'-'}</td><td style="padding:10px;line-height:1.8;vertical-align:top;text-align:right;">見積日：${esc(customer.date)}<br><b>${esc(settings.shopName)}</b>${settings.shopTel?`<br>TEL：${esc(settings.shopTel)}`:''}</td></tr></table><table style="width:100%;border-collapse:collapse;"><tr><th style="border:1px solid #2f6feb;background:#2f6feb;color:#fff;padding:5px 8px;font-size:11px;width:15%;">部位</th><th style="border:1px solid #2f6feb;background:#2f6feb;color:#fff;padding:5px 8px;font-size:11px;width:10%;">作業</th><th style="border:1px solid #2f6feb;background:#2f6feb;color:#fff;padding:5px 8px;font-size:11px;">内容</th><th style="border:1px solid #2f6feb;background:#2f6feb;color:#fff;padding:5px 8px;font-size:11px;width:6%;">数量</th><th style="border:1px solid #2f6feb;background:#2f6feb;color:#fff;padding:5px 8px;font-size:11px;width:13%;">金額</th></tr>${rows}</table><table style="width:240px;margin-left:auto;border-collapse:collapse;background:#f4f6f9;border:1px solid #e4e9f0;margin-top:8px;"><tr><td style="padding:5px 10px;color:#7c8696;">作業小計</td><td style="padding:5px 10px;text-align:right;">${fmt(t2.sub)}</td></tr><tr><td style="padding:5px 10px;color:#7c8696;">諸経費</td><td style="padding:5px 10px;text-align:right;">${fmt(t2.exp)}</td></tr><tr><td style="padding:5px 10px;color:#7c8696;">消費税</td><td style="padding:5px 10px;text-align:right;">${fmt(t2.tax)}</td></tr><tr><td style="padding:8px 10px;border-top:1px solid #e4e9f0;font-weight:700;">合計金額（税込）</td><td style="padding:8px 10px;border-top:1px solid #e4e9f0;font-size:17px;font-weight:900;color:#2f6feb;text-align:right;">${fmt(t2.grand)}</td></tr></table></div>`;
+
+  // iOS: try file share
+  try{
+    const file=new File([html],'見積書.html',{type:'text/html'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'見積書'});showMsg('print-msg','共有シートから送れます。',6000);return;}
+  }catch(e){if(e?.name==='AbortError')return;}
+  const ok=await writeToClipboard(t,html);
+  showMsg('print-msg',ok?'コピーしました。メールやメモに貼り付けできます。':'コピーに失敗しました。',6000);
+}
+function lineShare(){
+  const encoded=encodeURIComponent(buildText());
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const url=isIOS?`line://msg/text/${encoded}`:`https://line.me/R/msg/text/?${encoded}`;
+  const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  if(isIOS)setTimeout(()=>{if(document.visibilityState!=='hidden')window.location.href=`https://line.me/R/msg/text/?${encoded}`;},1500);
+  showMsg('print-msg','LINEアプリを起動しています…',5000);
+}
+async function dlFile(){
+  const t2=calcTotals();
+  const rows=items.map(it=>{const b=calcRow(it);return`<tr><td>${esc(it.part)||'-'}</td><td>${esc(it.type)}</td><td>${esc(b.desc)||'-'}</td><td style="text-align:center">${it.qty}</td><td style="text-align:right">${fmt(b.amount)}</td></tr>`;}).join('')||'<tr><td colspan="5" style="text-align:center">項目がありません</td></tr>';
+  const html=`<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>御見積書</title><style>@page{size:A4;margin:8mm;}body{font-family:'Hiragino Sans',sans-serif;color:#111;padding:8mm;font-size:11px;}table{width:100%;border-collapse:collapse;margin-top:8px;}th,td{border:1px solid #333;padding:4px 6px;font-size:10px;text-align:left;vertical-align:top;}th{background:#eee;}.ti{text-align:center;font-size:18px;font-weight:900;letter-spacing:.3em;margin-bottom:10px;}.top{display:flex;justify-content:space-between;margin-bottom:8px;gap:16px;flex-wrap:wrap;}.tots td{border:none;padding:2px 0;font-size:11px;}.grd td{border-top:2px solid #333;padding-top:4px;font-size:14px;font-weight:900;}</style></head><body><div class="ti">御 見 積 書</div><div class="top"><div><div><b>${esc(customer.name)||'お客様'}</b> 様</div><div>車種：${esc(customer.car)||'-'}（${esc(customer.carType)}）</div><div>登録番号：${esc(customer.plate)||'-'}</div><div>車体色：${esc(customer.color)||'-'}</div><div>代車：${esc(loanerSummary())}</div><div>支払区分：${esc(paySummary())}</div></div><div style="text-align:right"><div>見積日：${esc(customer.date)}</div><div><b>${esc(settings.shopName)}</b></div>${settings.shopTel?`<div>TEL：${esc(settings.shopTel)}</div>`:''}</div></div><table><thead><tr><th style="width:15%">部位</th><th style="width:11%">作業区分</th><th>内容</th><th style="width:6%">数量</th><th style="width:13%">金額</th></tr></thead><tbody>${rows}</tbody></table><table class="tots" style="width:240px;margin-left:auto;margin-top:8px;"><tr><td>作業小計</td><td style="text-align:right">${fmt(t2.sub)}</td></tr><tr><td>諸経費（${settings.expenseRate}%）</td><td style="text-align:right">${fmt(t2.exp)}</td></tr><tr><td>消費税（${settings.taxRate}%）</td><td style="text-align:right">${fmt(t2.tax)}</td></tr>${t2.disc10>0?`<tr><td>10%値引き</td><td style="text-align:right;color:#c00">－${fmt(t2.disc10)}</td></tr>`:''} ${t2.discFree>0?`<tr><td>自由値引き</td><td style="text-align:right;color:#c00">－${fmt(t2.discFree)}</td></tr>`:''}<tr class="grd"><td>合計金額（税込）</td><td style="text-align:right">${fmt(t2.grand)}</td></tr></table>${customer.note?`<div style="margin-top:10px;font-size:10px;">${esc(customer.note)}</div>`:''}</body></html>`;
+  const safe=(customer.car||'estimate').replace(/[\\/:*?"<>|]/g,'');
+  const fname=`見積書_${safe}_${customer.date||todayStr()}.html`;
+  const blob=new Blob([html],{type:'text/html'});
+  const file=new File([blob],fname,{type:'text/html'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'御見積書',text:`${customer.name||'お客様'} 様 見積書`});showMsg('print-msg','共有シートからメール・AirDropなどで保存できます。',6000);return;}
+    catch(e){if(e?.name==='AbortError')return;}
+  }
+  try{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),2000);showMsg('print-msg','ダウンロードしました。',5000);}
+  catch(e){showMsg('print-msg','保存に失敗しました。',5000);}
+}
+
+function saveEst(){
+  const t=calcTotals();
+  const snap={id:genId(),savedAt:new Date().toISOString(),customer:{...customer},items:[...items.map(i=>({...i}))],settings:{...settings},totals:t,disc10:document.getElementById('disc10').checked,discountFree:document.getElementById('disc-free').value};
+  history.unshift(snap);
+  try{localStorage.setItem('est-history',JSON.stringify(history));showMsg('save-msg','履歴に保存しました');}
+  catch(e){showMsg('save-msg','保存に失敗しました');}
+}
+function loadEst(h){
+  customer={...newCust(),...h.customer};
+  items=h.items.map(it=>({...newItem(),...it,id:genId()}));
+  fillCustForm();
+  setCarType(customer.carType);
+  if(customer.loanerCar!==null) setLoaner(customer.loanerCar);
+  ['loanerNormal','loanerKei','loanerHeightLimit','loanerRider'].forEach(k=>{
+    const b=document.querySelector(`[data-lk="${k}"]`);
+    if(b) b.classList.toggle('on',!!customer[k]);
+  });
+  ['paySelf','payVehicle','payProperty'].forEach(k=>{
+    const b=document.querySelector(`[data-pk="${k}"]`);
+    if(b) b.classList.toggle('on',!!customer[k]);
+  });
+  document.getElementById('disc10').checked=h.disc10||false;
+  document.getElementById('disc-free').value=h.discountFree||'';
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('[data-tab="create"]').classList.add('active');
+  document.querySelectorAll('.tab-panel,.tab-panel-layout').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-create').classList.add('active');
+  render();
+}
+function deleteEst(id){
+  if(!confirm('この見積りを削除しますか？'))return;
+  history=history.filter(h=>h.id!==id);
+  try{localStorage.setItem('est-history',JSON.stringify(history));}catch(e){}
+  renderHistory();
+}
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  const empty=document.getElementById('history-empty');
+  list.innerHTML='';
+  empty.style.display=history.length?'none':'block';
+  history.forEach(h=>{
+    const div=document.createElement('div');
+    div.className='hist-card';
+    div.innerHTML=`
+      <div class="hist-info">
+        <b>${esc(h.customer.name||'（名前未入力）')} ／ ${esc(h.customer.car||'車種未入力')}（${esc(h.customer.carType||'国産車')}）</b>
+        <div class="hist-meta">見積日: ${esc(h.customer.date||'-')} ／ ${new Date(h.savedAt).toLocaleString('ja-JP')} ／ ${h.items.length}項目</div>
+      </div>
+      <div class="hist-total">${fmt(h.totals.grand)}</div>
+      <div class="hist-actions">
+        <button class="btn">呼び出す</button>
+        <button class="btn" style="color:var(--muted)">✕</button>
+      </div>`;
+    div.querySelectorAll('.btn')[0].addEventListener('click',()=>loadEst(h));
+    div.querySelectorAll('.btn')[1].addEventListener('click',()=>deleteEst(h.id));
+    list.appendChild(div);
+  });
+}
+
+function saveSettings(){
+  try{localStorage.setItem('est-settings',JSON.stringify(settings));showMsg('settings-msg','設定を保存しました');}
+  catch(e){showMsg('settings-msg','保存に失敗しました');}
+}
+function resetEst(){
+  if(!items.length&&!customer.name&&!customer.car)return;
+  if(!confirm('現在の見積りをクリアして新規作成しますか？'))return;
+  customer=newCust(); items=[];
+  fillCustForm();
+  setCarType('国産車');
+  setLoaner(null);
+  document.getElementById('disc10').checked=false;
+  document.getElementById('disc-free').value='';
+  document.querySelectorAll('[data-lk],[data-pk]').forEach(b=>b.classList.remove('on'));
+  document.getElementById('lb-yes').classList.remove('on');
+  document.getElementById('lb-no').classList.remove('on');
+  render();
+}
+
+// ─── PWA icon ─────────────────────────────────────────────
+(function(){
+  const c=document.createElement('canvas');c.width=c.height=192;
+  const ctx=c.getContext('2d');
+  const r=36;ctx.beginPath();ctx.moveTo(r,0);ctx.lineTo(192-r,0);ctx.quadraticCurveTo(192,0,192,r);ctx.lineTo(192,192-r);ctx.quadraticCurveTo(192,192,192-r,192);ctx.lineTo(r,192);ctx.quadraticCurveTo(0,192,0,192-r);ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();
+  ctx.fillStyle='#1a1d21';ctx.fill();
+  ctx.fillStyle='#2f6feb';ctx.fillRect(32,75,128,9);ctx.fillRect(32,99,96,9);ctx.fillRect(32,51,112,9);
+  ctx.beginPath();ctx.arc(148,133,30,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 34px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('¥',148,134);
+  const url=c.toDataURL('image/png');
+  document.getElementById('apple-touch-icon').href=url;
+  document.getElementById('pwa-icon').href=url;
+  const manifest={name:'鈑金・塗装 見積りツール',short_name:'見積りツール',start_url:'./',display:'standalone',background_color:'#1a1d21',theme_color:'#1a1d21',icons:[{src:url,sizes:'192x192',type:'image/png'}]};
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);document.head.appendChild(link);
+})();
+
+// ─── Service Worker ────────────────────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    const sw=`const C='est-v2';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add(self.location.href)).then(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request))));});`;
+    const blob=new Blob([sw],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────
+try{const s=localStorage.getItem('est-settings');if(s)settings={...DEF_SETTINGS,...JSON.parse(s)};}catch(e){}
+try{const h=localStorage.getItem('est-history');if(h)history=JSON.parse(h);}catch(e){}
+fillCustForm();
+fillSettingsForm();
+setCarType('国産車');
+buildPanelMap();
+render();
+document.getElementById('c-date').value=todayStr();
+</script>
+</body>
+</html>
