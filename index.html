@@ -266,6 +266,21 @@ h1 .bolt{height:.92em;width:.42em;vertical-align:-.08em;margin-inline:.02em .16e
 .fc .lv,.card .top,.qty,.badge,.fchip,.box-head span{font-family:"Syncopate","Helvetica Neue",Arial,sans-serif;font-weight:400}
 .fc .lv{font-size:8.5px}
 .sub{font-family:var(--f-body);letter-spacing:.28em}
+
+.auto-tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:340px;margin:12px auto 0}
+.auto-tools .iconbtn{border-color:var(--volt);color:var(--volt)}
+.auto-tools .iconbtn.ai{border-color:var(--cyan);color:var(--cyan)}
+.auto-tools .iconbtn:disabled{opacity:.5}
+.auto-status{max-width:340px;margin:10px auto 0;font-size:12.5px;line-height:1.5;padding:8px 12px;border-left:2px solid var(--muted);background:rgba(255,255,255,.04);color:var(--white)}
+.auto-status[data-kind="ok"]{border-color:var(--volt)}
+.auto-status[data-kind="warn"]{border-color:#FF6A3D;color:#FFC2B0}
+.auto-status[data-kind="busy"]{border-color:var(--cyan)}
+.auto-status[data-kind="busy"]::before{content:"";display:inline-block;width:10px;height:10px;margin-right:8px;border:2px solid var(--cyan);border-right-color:transparent;border-radius:50%;animation:rot .8s linear infinite;vertical-align:-1px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.ai-set{display:grid;gap:10px;margin-top:10px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1)}
+.ai-set h3{margin:0;font-size:15px;font-weight:700}
+.ai-set .chk{display:flex;align-items:center;gap:8px;letter-spacing:.04em;font-size:13px;color:var(--white)}
+.ai-set .chk input{width:auto;accent-color:var(--volt)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 </style>
@@ -372,6 +387,13 @@ h1 .bolt{height:.92em;width:.42em;vertical-align:-.08em;margin-inline:.02em .16e
         <button class="iconbtn" type="button" id="rePick">撮り直す</button>
       </div>
       <div class="hint">ドラッグで位置合わせ・スライダー／ピンチで拡大</div>
+      <div class="auto-tools">
+        <button class="iconbtn" type="button" id="autoCropBtn">自動で切り抜く</button>
+        <button class="iconbtn" type="button" id="undoCrop" hidden>元の写真</button>
+        <button class="iconbtn" type="button" id="ocrBtn">型番を読む</button>
+        <button class="iconbtn ai" type="button" id="aiBtn" hidden>AIで読み取る</button>
+      </div>
+      <div class="auto-status" id="autoStatus" role="status" hidden></div>
     </div>
     <div id="savedPhoto" hidden style="text-align:center">
       <div class="thumb" style="max-width:200px;margin:0 auto;border:1px solid var(--gold-2)"><img id="savedImg" alt=""></div>
@@ -445,7 +467,7 @@ h1 .bolt{height:.92em;width:.42em;vertical-align:-.08em;margin-inline:.02em .16e
 <!-- バックアップ -->
 <div class="sheet" id="menuSheet" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
-    <div class="phead"><h2 id="menuTitle">バックアップ</h2><button class="x" type="button" data-close aria-label="閉じる">×</button></div>
+    <div class="phead"><h2 id="menuTitle">セーブと設定</h2><button class="x" type="button" data-close aria-label="閉じる">×</button></div>
     <div class="menu-list">
       <p>データはこの端末のブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておくと安心です。</p>
       <button class="btn primary" type="button" id="exportBtn">ファイルに書き出す（写真込み）</button>
@@ -453,6 +475,23 @@ h1 .bolt{height:.92em;width:.42em;vertical-align:-.08em;margin-inline:.02em .16e
         <input type="file" id="importInput" accept="application/json,.json" hidden>
       </label>
       <p id="storageInfo"></p>
+      <div class="ai-set">
+        <h3><span class="z sm">AI READER</span>　AI読み取りの設定</h3>
+        <p>AnthropicのAPIキーを入れると、写真からカード名・型番・番号・レア度・タイプをまとめて読み取れます。キーはこの端末のブラウザ内にだけ保存され、GitHubには載りません。キーは Claude Console（platform.claude.com）で発行できます。</p>
+        <p>状態：<b id="aiState">未設定</b></p>
+        <label>APIキー<input id="aiKey" type="password" autocomplete="off" placeholder="sk-ant-… を貼り付け"></label>
+        <label>モデル
+          <select id="aiModel">
+            <option value="claude-haiku-5-5">Haiku 5.5（速い・1枚 約0.1円）</option>
+            <option value="claude-sonnet-5-5">Sonnet 5.5（高精度・1枚 約1円）</option>
+          </select>
+        </label>
+        <label class="chk"><input type="checkbox" id="aiAuto" checked> 写真を撮ったら自動でAI読み取りする</label>
+        <div class="actions">
+          <button class="btn danger" type="button" id="aiClear" hidden>キーを削除</button>
+          <button class="btn primary" type="button" id="aiSave">保存する</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -647,17 +686,19 @@ function clampOffset(){
   const mx = Math.max(0,(w-cv.width)/2), my = Math.max(0,(h-cv.height)/2);
   crop.ox = Math.min(mx,Math.max(-mx,crop.ox)); crop.oy = Math.min(my,Math.max(-my,crop.oy));
 }
-function draw(){
-  if(!crop.img) return;
-  clampOffset();
-  const s = baseScale()*crop.zoom;
-  ctx.fillStyle="#222";ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.save();
-  ctx.translate(cv.width/2+crop.ox, cv.height/2+crop.oy);
-  ctx.rotate(crop.rot*Math.PI/180);
-  ctx.drawImage(crop.img, -crop.img.width*s/2, -crop.img.height*s/2, crop.img.width*s, crop.img.height*s);
-  ctx.restore();
+function paint(g,k){   // k: 表示キャンバス(630x880)に対する倍率
+  const s = baseScale()*crop.zoom*k;
+  g.fillStyle="#222";g.fillRect(0,0,cv.width*k,cv.height*k);
+  g.save();
+  g.translate(cv.width*k/2+crop.ox*k, cv.height*k/2+crop.oy*k);
+  g.rotate(crop.rot*Math.PI/180);
+  g.imageSmoothingQuality="high";
+  g.drawImage(crop.img, -crop.img.width*s/2, -crop.img.height*s/2, crop.img.width*s, crop.img.height*s);
+  g.restore();
 }
+function draw(){ if(!crop.img) return; clampOffset(); paint(ctx,1); }
+/* 文字認識・AI用：今の切り抜き範囲を高解像度で書き出す */
+function viewCanvas(k){ const c=document.createElement("canvas"); c.width=cv.width*k; c.height=cv.height*k; clampOffset(); paint(c.getContext("2d"),k); return c; }
 function loadFile(file){
   if(!file) return;
   const url = URL.createObjectURL(file);
@@ -667,9 +708,10 @@ function loadFile(file){
     const max = 2000, k = Math.min(1, max/Math.max(im.width,im.height));
     let src = im;
     if(k<1){const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);src=c}
-    crop.img=src;crop.rot=0;crop.zoom=1;crop.ox=0;crop.oy=0;$("zoom").value=1;
-    $("pickArea").hidden=true;$("savedPhoto").hidden=true;$("cropArea").hidden=false;
+    crop.img=src;crop.orig=src;crop.auto=false;crop.rot=0;crop.zoom=1;crop.ox=0;crop.oy=0;$("zoom").value=1;
+    $("pickArea").hidden=true;$("savedPhoto").hidden=true;$("cropArea").hidden=false;$("undoCrop").hidden=true;
     draw(); URL.revokeObjectURL(url);
+    autoCrop().then(ok=>{ if(ok) readCode(); });
   };
   im.onerror = () => {toast("この画像は読み込めませんでした。JPEGかPNGで試してください");URL.revokeObjectURL(url)};
   im.src = url;
@@ -715,7 +757,8 @@ function renderRarPick(){
 }
 $("rarPick").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;editing.rarity=editing.rarity===b.dataset.r?"":b.dataset.r;renderRarPick()});
 function openEdit(c){
-  editing = {id:c?.id||null, rarity:c?.rarity||"", keepImg:!!c?.img, img:c?.img||null, fav:!!c?.fav, elem:c?.elem||""}; renderFav(); renderTypePick();
+  editing = {id:c?.id||null, rarity:c?.rarity||"", keepImg:!!c?.img, img:c?.img||null, fav:!!c?.fav, elem:c?.elem||""}; renderFav(); renderTypePick(); editing.rarAuto=false;
+  ["fName","fCode","fSet","fNo"].forEach(id=>delete $(id).dataset.user); setStatus("");
   $("editTitle").textContent = c ? "カードを編集" : "カード追加";
   $("fName").value=c?.name||""; $("fCode").value=c?.code||(c?"":lastCode);
   $("fSet").value=c?.set||(c?"":lastSetName()); autoSet=false; updateCodeHint(); $("fNo").value=c?.no||"";
@@ -762,6 +805,238 @@ $("cardForm").addEventListener("submit",async e=>{
     closeSheet("editSheet"); render(); toast(old?`${c.name}の データを かきかえた！`:`${c.name}を ゲットした！`);
   }catch(err){toast("保存できませんでした。端末の空き容量を確認してください")}
 });
+
+/* ---------- 自動トリミング（OpenCV）・文字認識（Tesseract）・AI読み取り（Claude API） ---------- */
+const OPENCV_URL = "https://docs.opencv.org/4.10.0/opencv.js";
+const TESS_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const statusEl = () => $("autoStatus");
+function setStatus(msg, kind){ const s=statusEl(); s.textContent=msg||""; s.dataset.kind=kind||""; s.hidden=!msg; }
+const scripts = {};
+function loadScript(src){
+  if(!scripts[src]) scripts[src] = new Promise((res,rej)=>{
+    const s=document.createElement("script"); s.src=src; s.async=true;
+    s.onload=res; s.onerror=()=>{delete scripts[src]; rej(new Error("load"))};
+    document.head.appendChild(s);
+  });
+  return scripts[src];
+}
+let cvPromise=null;
+function loadCV(){
+  if(cvPromise) return cvPromise;
+  cvPromise = (async()=>{
+    await loadScript(OPENCV_URL);
+    let cv = window.cv;
+    if(cv && cv.Mat) return {lib:cv};   // OpenCVはthenを持つので、そのまま返すと待ち続けてしまう
+    await new Promise((res,rej)=>{
+      const t=setTimeout(()=>rej(new Error("timeout")),45000);
+      const done=()=>{clearTimeout(t);res()};
+      if(window.cv && window.cv.Mat) return done();
+      window.cv.onRuntimeInitialized = done;
+    });
+    return {lib:window.cv};
+  })().catch(e=>{cvPromise=null;throw e});
+  return cvPromise;
+}
+function orderQuad(p){
+  const s=p.map(q=>q.x+q.y), d=p.map(q=>q.y-q.x);
+  const tl=p[s.indexOf(Math.min(...s))], br=p[s.indexOf(Math.max(...s))];
+  const tr=p[d.indexOf(Math.min(...d))], bl=p[d.indexOf(Math.max(...d))];
+  return [tl,tr,br,bl];
+}
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function findCardQuad(cv, srcCanvas){
+  const k = 640/Math.max(srcCanvas.width,srcCanvas.height);
+  const sm=document.createElement("canvas"); sm.width=Math.round(srcCanvas.width*k); sm.height=Math.round(srcCanvas.height*k);
+  sm.getContext("2d").drawImage(srcCanvas,0,0,sm.width,sm.height);
+  const src=cv.imread(sm), gray=new cv.Mat(), edges=new cv.Mat(), contours=new cv.MatVector(), hier=new cv.Mat();
+  const kernel=cv.Mat.ones(3,3,cv.CV_8U);
+  let best=null;
+  try{
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray,gray,new cv.Size(5,5),0);
+    for(const [lo,hi] of [[30,100],[60,180],[15,60]]){
+      cv.Canny(gray,edges,lo,hi);
+      cv.dilate(edges,edges,kernel,new cv.Point(-1,-1),2);
+      cv.findContours(edges,contours,hier,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+      const minA = sm.width*sm.height*0.12;
+      for(let i=0;i<contours.size();i++){
+        const c=contours.get(i), area=cv.contourArea(c);
+        if(area<minA || (best && area<=best.area)){c.delete();continue}
+        const peri=cv.arcLength(c,true), ap=new cv.Mat();
+        cv.approxPolyDP(c,ap,0.02*peri,true);
+        let pts;
+        if(ap.rows===4){ pts=[]; for(let j=0;j<4;j++) pts.push({x:ap.data32S[j*2],y:ap.data32S[j*2+1]}); }
+        else { const r=cv.minAreaRect(c); pts=cv.RotatedRect.points(r).map(q=>({x:q.x,y:q.y})); }
+        ap.delete(); c.delete();
+        const q=orderQuad(pts), w=(dist(q[0],q[1])+dist(q[3],q[2]))/2, h=(dist(q[0],q[3])+dist(q[1],q[2]))/2;
+        const ratio=Math.min(w,h)/Math.max(w,h);
+        if(ratio>0.55 && ratio<0.9) best={area,q};   // カードの縦横比（約0.72）に近いものだけ
+      }
+      if(best) break;
+    }
+  } finally { src.delete();gray.delete();edges.delete();contours.delete();hier.delete();kernel.delete(); }
+  if(!best) return null;
+  return best.q.map(p=>({x:p.x/k,y:p.y/k}));
+}
+function warpCard(cv, srcCanvas, q){
+  let [tl,tr,br,bl]=q;
+  const w=(dist(tl,tr)+dist(bl,br))/2, h=(dist(tl,bl)+dist(tr,br))/2;
+  if(w>h){ [tl,tr,br,bl]=[bl,tl,tr,br]; }   // 横向きなら縦に起こす
+  const W=1260,H=1760;
+  const src=cv.imread(srcCanvas), dst=new cv.Mat();
+  const a=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]);
+  const b=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,W,0,W,H,0,H]);
+  const M=cv.getPerspectiveTransform(a,b);
+  cv.warpPerspective(src,dst,M,new cv.Size(W,H),cv.INTER_LINEAR,cv.BORDER_REPLICATE,new cv.Scalar());
+  const out=document.createElement("canvas"); out.width=W; out.height=H; cv.imshow(out,dst);
+  src.delete();dst.delete();a.delete();b.delete();M.delete();
+  return out;
+}
+async function autoCrop(){
+  if(!crop.orig) return false;
+  setStatus("カードの輪郭を探しています…（初回は準備に少し時間がかかります）","busy");
+  try{
+    const cv=(await loadCV()).lib;
+    const q=findCardQuad(cv,crop.orig);
+    if(!q){ setStatus("カードの輪郭が見つかりませんでした。カードと違う色の背景で撮るか、手動で合わせてください","warn"); return false; }
+    const card=warpCard(cv,crop.orig,q);
+    crop.img=card;crop.rot=0;crop.zoom=1;crop.ox=0;crop.oy=0;$("zoom").value=1;crop.auto=true;draw();
+    $("undoCrop").hidden=false;
+    setStatus("自動で切り抜きました","ok");
+    return true;
+  }catch(e){
+    setStatus("自動切り抜きを読み込めませんでした。通信状態を確認してください","warn"); return false;
+  }
+}
+$("autoCropBtn").addEventListener("click",async()=>{ if(await autoCrop()) readCode(); });
+$("undoCrop").addEventListener("click",()=>{crop.img=crop.orig;crop.rot=0;crop.zoom=1;crop.ox=crop.oy=0;$("zoom").value=1;crop.auto=false;draw();$("undoCrop").hidden=true;setStatus("元の写真に戻しました","")});
+
+/* 文字認識：左下の「M6a 133/103 SAR」 */
+let tessWorker=null;
+async function getWorker(){
+  if(tessWorker) return tessWorker;
+  await loadScript(TESS_URL);
+  tessWorker = await Tesseract.createWorker("eng");
+  await tessWorker.setParameters({tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/ ", preserve_interword_spaces:"1", tessedit_pageseg_mode:"11"});
+  return tessWorker;
+}
+function stripCanvas(big,invert){
+  const sx=0, sy=Math.round(big.height*0.86), sw=Math.round(big.width*0.66), sh=Math.round(big.height*0.14);
+  const S=Math.max(1,Math.min(3,1800/sw)), c=document.createElement("canvas"); c.width=Math.round(sw*S); c.height=Math.round(sh*S);
+  const x=c.getContext("2d"); x.imageSmoothingQuality="high"; x.drawImage(big,sx,sy,sw,sh,0,0,c.width,c.height);
+  const d=x.getImageData(0,0,c.width,c.height), p=d.data, Wd=c.width, Hd=c.height;
+  // 局所平均との差で二値化（背景の色に左右されにくい）。invert=false:暗い文字 / true:明るい文字
+  const g=new Float32Array(Wd*Hd); for(let k=0,q=0;k<p.length;k+=4,q++) g[q]=0.3*p[k]+0.59*p[k+1]+0.11*p[k+2];
+  const I=new Float64Array((Wd+1)*(Hd+1));
+  for(let yy=1;yy<=Hd;yy++){ let row=0; for(let xx=1;xx<=Wd;xx++){ row+=g[(yy-1)*Wd+xx-1]; I[yy*(Wd+1)+xx]=I[(yy-1)*(Wd+1)+xx]+row; } }
+  const r=Math.max(8,Math.round(Hd*0.12));
+  for(let yy=0;yy<Hd;yy++){ const y0=Math.max(0,yy-r), y1=Math.min(Hd,yy+r+1);
+    for(let xx=0;xx<Wd;xx++){ const x0=Math.max(0,xx-r), x1=Math.min(Wd,xx+r+1);
+      const sum=I[y1*(Wd+1)+x1]-I[y0*(Wd+1)+x1]-I[y1*(Wd+1)+x0]+I[y0*(Wd+1)+x0], m=sum/((y1-y0)*(x1-x0)), v=g[yy*Wd+xx];
+      const o=(yy*Wd+xx)*4;
+      if(invert===2){ const gg=Math.max(0,Math.min(255,(v-128)*1.8+128)); p[o]=p[o+1]=p[o+2]=gg; continue; }
+      const ink = invert ? v>m+18 : v<m-18; p[o]=p[o+1]=p[o+2]=ink?0:255; } }
+  x.putImageData(d,0,0); return c;
+}
+const knownCodes = () => Object.keys({...SETS,...userSets}).sort((a,b)=>b.length-a.length);
+function parseStrip(text){
+  const t=" "+text.replace(/\s+/g," ")+" ", out={};
+  const flat=t.replace(/[^A-Za-z0-9/ ]/g,"")
+    .replace(/\b(SV|SM|M|S)([0-9GOIl]{1,2})([A-Za-z]?)(?=\s|$)/gi,(m,x,y,z)=>x+y.replace(/G/g,"6").replace(/[Oo]/g,"0").replace(/[Il]/g,"1")+z);
+  for(const k of knownCodes()){ const re=new RegExp("(^|[^A-Za-z0-9])"+k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?![A-Za-z0-9])","i"); if(re.test(flat)){ out.code=k; break; } }
+  if(!out.code){ const m=flat.match(/\b((?:SV|SM|S|M)\d{1,2}[A-Za-z]?)\b/); if(m) out.code=m[1].replace(/^(sv|sm|s|m)/i,x=>x.toUpperCase()); }
+  const n=flat.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
+  if(n){ out.no=`${n[1].padStart(3,"0")}/${n[2].padStart(3,"0")}`;
+    const after=flat.slice(flat.indexOf(n[0])+n[0].length).toUpperCase();
+    const rk=RAR.map(r=>r.k).sort((a,b)=>b.length-a.length).find(k=>new RegExp("^\\s*"+k+"\\b").test(after));
+    if(rk) out.rarity=rk;
+  }
+  return out;
+}
+async function readCode(){
+  if(!crop.img) return;
+  setStatus("型番と番号を読み取っています…","busy");
+  try{
+    const w=await getWorker();
+    let res={}; const big=viewCanvas(2);
+    for(const inv of [0,1,2]){
+      const {data}=await w.recognize(stripCanvas(big,inv)); if(!inv) window._strip=stripCanvas(big,inv).toDataURL();
+      const r=parseStrip(data.text||"");
+      res={...r,...res};
+      if(res.code&&res.no) break;
+    }
+    const got=applyRead(res,"ocr");
+    if(got.length) setStatus(`読み取り：${got.join("・")}（念のため確認してください）`,"ok");
+    else setStatus("型番を読み取れませんでした。左下が写るように切り抜いて「型番を読む」を押すか、手入力してください","warn");
+    if(aiCfg().key && aiCfg().auto) aiRead();
+  }catch(e){ setStatus("文字認識を読み込めませんでした。通信状態を確認してください","warn"); }
+}
+$("ocrBtn").addEventListener("click",readCode);
+
+/* 入力欄への反映（自分で入力した欄は上書きしない） */
+function userTyped(id){ return $(id).dataset.user==="1"; }
+["fName","fCode","fSet","fNo"].forEach(id=>$(id).addEventListener("input",e=>{ if(e.isTrusted) $(id).dataset.user="1"; }));
+function applyRead(r,src){
+  const got=[];
+  if(r.name && !userTyped("fName") && ($("fName").value===""||src==="ai")){ $("fName").value=r.name; got.push(r.name); }
+  if(r.code && !userTyped("fCode")){ $("fCode").value=r.code; $("fCode").dispatchEvent(new Event("input")); got.push(r.code); }
+  if(r.no && !userTyped("fNo")){ $("fNo").value=r.no; got.push(r.no); }
+  if(r.rarity && RIDX[r.rarity]!==undefined && (!editing.rarity||src==="ai"||editing.rarAuto)){ editing.rarity=r.rarity; editing.rarAuto=true; renderRarPick(); got.push(r.rarity); }
+  if(r.elem && ELEM[r.elem] && (!editing.elem||src==="ai")){ editing.elem=r.elem; renderTypePick(); got.push(ELEM[r.elem].n); }
+  if(r.type && ["ポケモン","トレーナーズ","エネルギー"].includes(r.type)) $("fType").value=r.type;
+  if(r.set && !$("fSet").value.trim()) $("fSet").value=r.set;
+  return got;
+}
+
+/* AI読み取り（Claude API・ブラウザから直接） */
+function aiCfg(){ try{ return JSON.parse(localStorage.getItem("pokeca-ai")||"{}") }catch(e){ return {} } }
+function saveAiCfg(c){ try{ localStorage.setItem("pokeca-ai",JSON.stringify(c)); return true }catch(e){ return false } }
+function refreshAiUi(){ const c=aiCfg(); $("aiBtn").hidden=!c.key; }
+const AI_PROMPT = `これは日本語版ポケモンカードの写真です。カードに印刷されている情報だけを読み取り、次のJSONだけを出力してください。説明文は不要です。
+{"name":"カード名（例：ボーマンダex）","code":"左下の型番記号（例：M6a, SV2a）","no":"カード番号（例：133/103）","rarity":"番号の右のレアリティ記号（C,U,R,RR,RRR,AR,SR,SAR,UR,ACE,S,SSR,CHR,CSR,K,PR のいずれか。無ければ空）","type":"ポケモン/トレーナーズ/エネルギー のいずれか","elem":"ポケモンのタイプ（grass,fire,water,lightning,psychic,fighting,dark,metal,dragon,fairy,colorless のいずれか。ポケモン以外は空）"}
+読めない項目は空文字にしてください。推測で埋めないでください。`;
+async function aiRead(){
+  const c=aiCfg(); if(!c.key||!crop.img) return;
+  setStatus("AIでカードを読み取っています…","busy"); $("aiBtn").disabled=true;
+  try{
+    const out=viewCanvas(1.6);   // 約1000×1400
+    const b64=out.toDataURL("image/jpeg",0.85).split(",")[1];
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{
+      "content-type":"application/json","x-api-key":c.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:c.model||"claude-haiku-5-5",max_tokens:400,messages:[{role:"user",content:[
+        {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:AI_PROMPT}]}]})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){
+      const msg = r.status===401 ? "APIキーが正しくありません。SAVE画面で入れ直してください"
+        : r.status===429 ? "短時間に使いすぎています。少し待ってから試してください"
+        : r.status===400 && /credit|balance/i.test(j?.error?.message||"") ? "APIのクレジット残高が足りません。Claude Consoleで残高を確認してください"
+        : `AI読み取りに失敗しました（${r.status}）`;
+      setStatus(msg,"warn"); return;
+    }
+    const text=(j.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("");
+    const m=text.match(/\{[\s\S]*\}/); if(!m){ setStatus("AIの答えを読み取れませんでした。もう一度試してください","warn"); return; }
+    const d=JSON.parse(m[0]);
+    const got=applyRead({name:d.name,code:d.code?(lookupSet(d.code)||{}).code||d.code:"",no:d.no,rarity:(d.rarity||"").toUpperCase(),type:d.type,elem:d.elem},"ai");
+    setStatus(got.length?`AI読み取り：${got.join("・")}（確認してから保存してください）`:"AIでも読み取れる文字がありませんでした","ok");
+  }catch(e){ setStatus("AIに接続できませんでした。通信状態を確認してください","warn"); }
+  finally{ $("aiBtn").disabled=false; }
+}
+$("aiBtn").addEventListener("click",aiRead);
+$("aiSave").addEventListener("click",()=>{
+  const key=$("aiKey").value.trim(), old=aiCfg();
+  const c={key:key||old.key||"", model:$("aiModel").value, auto:$("aiAuto").checked};
+  if(!c.key){ toast("APIキーを入れてください"); return; }
+  if(saveAiCfg(c)){ $("aiKey").value=""; renderAiSettings(); refreshAiUi(); toast("AI読み取りの設定を保存しました"); } else toast("この端末では設定を保存できませんでした");
+});
+$("aiClear").addEventListener("click",()=>{ try{localStorage.removeItem("pokeca-ai")}catch(e){} renderAiSettings(); refreshAiUi(); toast("APIキーを削除しました"); });
+function renderAiSettings(){
+  const c=aiCfg();
+  $("aiState").textContent = c.key ? `設定済み（…${c.key.slice(-4)}）` : "未設定";
+  $("aiModel").value = c.model||"claude-haiku-5-5";
+  $("aiAuto").checked = c.auto!==false;
+  $("aiClear").hidden = !c.key;
+}
+renderAiSettings(); refreshAiUi();
 
 /* ---------- detail ---------- */
 let viewing=null;
