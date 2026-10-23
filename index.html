@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="POKECA">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>ポケカ バインダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Bodoni+Moda:ital,opsz,wght@1,6..96,700;1,6..96,800&family=Oswald:wght@500;600&family=Shippori+Mincho+B1:wght@700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
+<style>
+/* Layout: 夜のファッションショー。スポットライトの当たるステージ→ランウェイに並ぶパーティ→雑誌の目次のような手帳→光るカード */
+:root{
+  --black:#0B0B0F;
+  --stage:#15151C;
+  --panel:#191922;
+  --volt:#E8FF1A;       /* エレクトリックイエロー */
+  --volt-2:#C6E600;
+  --cyan:#3FE0FF;       /* 放電の青 */
+  --white:#F7F7F2;
+  --muted:#9A9AA8;
+  --line:rgba(232,255,26,.35);
+  --t-grass:#7BD36A;--t-fire:#FF6A3D;--t-water:#3FA4FF;--t-lightning:#E8FF1A;--t-psychic:#C57BFF;
+  --t-fighting:#D98A45;--t-dark:#4A4A60;--t-metal:#AEB7C4;--t-dragon:#CDB33D;--t-colorless:#E6E2D6;--t-fairy:#FF8CCB;
+  --navy:#0B0B0F;
+  --f-display:"Bodoni Moda","Shippori Mincho B1",Didot,"Times New Roman",serif;
+  --f-pixel:"Zen Kaku Gothic New","Hiragino Sans",sans-serif;  /* ラベル用（ゴシックの細身） */
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-mono:"Oswald","Zen Kaku Gothic New",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background-color:var(--black);color:var(--white);font-family:var(--f-body);font-size:15px;line-height:1.6;font-weight:500;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:calc(110px + env(safe-area-inset-bottom,0px));
+  -webkit-tap-highlight-color:transparent;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% 0,rgba(232,255,26,.08),transparent 70%),
+    repeating-linear-gradient(90deg,transparent 0 79px,rgba(255,255,255,.025) 79px 80px);
+}
+img{max-width:100%;display:block}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* stage */
+.sky{position:relative;overflow:hidden;background:
+  radial-gradient(ellipse 22% 90% at 18% -10%,rgba(240,255,150,.28),transparent 70%),
+  radial-gradient(ellipse 22% 90% at 82% -10%,rgba(160,240,255,.22),transparent 70%),
+  radial-gradient(ellipse 50% 60% at 50% 120%,rgba(232,255,26,.18),transparent 70%),
+  linear-gradient(180deg,#0B0B0F,#121219);
+  border-bottom:1px solid var(--line)}
+/* ランウェイの床ライン */
+.sky::after{content:"";position:absolute;left:0;right:0;bottom:22px;height:5px;background:repeating-linear-gradient(90deg,transparent 0 22px,rgba(232,255,26,.8) 22px 34px,transparent 34px 56px);box-shadow:0 0 12px rgba(232,255,26,.4);animation:runway 1.6s linear infinite}
+@keyframes runway{to{background-position:56px 0}}
+/* 雲 → 稲妻のフラッシュ */
+.cloud{position:absolute;width:3px;height:120px;top:-10px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);filter:drop-shadow(0 0 6px var(--cyan));opacity:0;animation:flash 6s infinite;transform-origin:top;pointer-events:none}
+.cloud.c1{left:12%;rotate:14deg}
+.cloud.c2{left:58%;rotate:-18deg;animation-delay:2.1s;background:linear-gradient(180deg,transparent,var(--volt),transparent);filter:drop-shadow(0 0 6px var(--volt))}
+.cloud.c3{left:86%;rotate:22deg;animation-delay:4.3s}
+@keyframes flash{0%,86%,100%{opacity:0}88%{opacity:1}90%{opacity:.2}92%{opacity:.9}95%{opacity:0}}
+
+header{position:relative;z-index:2;padding-block:34px 70px}
+.brand{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-weight:800;font-style:italic;font-size:clamp(40px,11vw,76px);line-height:.98;margin:0;color:var(--white);letter-spacing:.01em;
+  text-shadow:0 0 18px rgba(232,255,26,.35)}
+h1::first-line{color:var(--volt)}
+.sub{margin-top:14px;display:inline-flex;align-items:center;gap:10px;font-family:var(--f-mono);font-weight:500;font-size:12px;letter-spacing:.32em;color:var(--volt);text-transform:uppercase}
+.sub::before{content:"";width:28px;height:14px;background:var(--volt);clip-path:polygon(0 60%,40% 0,40% 40%,100% 40%,60% 100%,60% 60%)}
+.chipbtn{border:1px solid var(--volt);background:transparent;color:var(--volt);border-radius:0;padding:8px 18px;font-family:var(--f-mono);font-size:13px;letter-spacing:.24em;cursor:pointer;transition:background .2s,color .2s}
+.chipbtn:hover{background:var(--volt);color:var(--black)}
+
+/* panels */
+.box{position:relative;background:linear-gradient(180deg,#1B1B25,#14141B);border:1px solid rgba(255,255,255,.08);border-radius:4px;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.box::before{content:"";position:absolute;left:0;top:0;width:64px;height:3px;background:var(--volt);box-shadow:0 0 12px var(--volt)}
+.box-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:18px 18px 0}
+.box-head h2{margin:0;font-family:var(--f-display);font-style:italic;font-weight:700;font-size:22px;letter-spacing:.04em;color:var(--white)}
+.box-head span{font-family:var(--f-mono);font-size:12px;letter-spacing:.18em;color:var(--volt)}
+.main-stack{display:grid;gap:20px;margin-top:-40px;position:relative;z-index:3}
+
+/* party = runway lineup */
+.party-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 18px 20px}
+@media (min-width:760px){.party-slots{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.fc{position:relative;display:flex;flex-direction:column;gap:8px;align-items:stretch;border:0;padding:0;background:none;cursor:pointer;text-align:left;transition:transform .25s}
+.fc:hover{transform:translateY(-4px)}
+.fc img,.fc .ph{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:3px;background:#0E0E14;box-shadow:0 0 0 1px rgba(255,255,255,.12),0 14px 22px rgba(0,0,0,.6),0 0 0 3px transparent;transition:box-shadow .25s}
+.fc:hover img{box-shadow:0 0 0 2px var(--volt),0 0 22px rgba(232,255,26,.45)}
+.fc::after{content:"";height:3px;border-radius:2px;background:var(--t,var(--volt));box-shadow:0 0 10px var(--t,var(--volt))}
+.fc .ph{display:grid;place-items:center;font-family:var(--f-display);font-size:28px;color:var(--muted)}
+.fc .cap{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .lv{position:absolute;top:6px;left:6px;z-index:1;font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--black);background:var(--volt);padding:0 6px}
+.slot-empty{border:1px dashed rgba(232,255,26,.35);border-radius:3px;display:grid;place-items:center;aspect-ratio:63/96;color:var(--muted);font-family:var(--f-mono);letter-spacing:.2em;font-size:11px;text-align:center;padding:6px}
+.boxrow{display:flex;gap:12px;overflow-x:auto;padding:0 18px 18px;scrollbar-width:thin;scrollbar-color:var(--volt) transparent}
+.boxrow .fc{flex:none;width:92px}
+.boxrow-lbl{padding:0 18px 8px;font-size:12px;color:var(--muted);letter-spacing:.08em}
+.fan-empty{grid-column:1/-1;font-size:13px;color:var(--muted)}
+
+/* notebook */
+.trainer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;padding:14px 18px 20px}
+@media (max-width:560px){.trainer{grid-template-columns:1fr}}
+.idrow{display:grid;grid-template-columns:auto 1fr;gap:0 12px;font-size:13px;align-content:start;margin:0}
+.idrow dt,.idrow dd{padding-block:7px;border-bottom:1px solid rgba(255,255,255,.08)}
+.idrow dt{color:var(--muted);letter-spacing:.06em}
+.idrow dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;grid-column:1/-1;border-block:1px solid var(--line)}
+.stat{padding:12px 6px;text-align:center}
+.stat+.stat{border-left:1px solid rgba(255,255,255,.08)}
+.stat b{display:block;font-family:var(--f-display);font-style:italic;font-weight:700;font-size:clamp(30px,9vw,46px);line-height:1;color:var(--white);font-variant-numeric:lining-nums tabular-nums}
+.stat:nth-child(1) b{color:var(--volt);text-shadow:0 0 16px rgba(232,255,26,.5)}
+.stat span{font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;color:var(--muted)}
+.badgecase{border:1px solid rgba(255,255,255,.1);border-radius:3px;background:radial-gradient(ellipse at 50% 0,rgba(63,224,255,.12),transparent 70%),#101017;padding:12px;min-height:90px}
+.badgecase .t{font-size:11px;letter-spacing:.14em;color:var(--cyan);margin-bottom:8px}
+.badges{display:flex;flex-wrap:wrap;gap:10px}
+.bdg{width:46px;height:46px;display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;color:var(--black);background:linear-gradient(150deg,#F6FFB0,var(--volt) 45%,var(--volt-2));
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);position:relative;filter:drop-shadow(0 0 6px rgba(232,255,26,.5))}
+.bdg span{position:relative;z-index:1;font-weight:600}
+.bdg.off{background:rgba(255,255,255,.06);color:rgba(255,255,255,.25);filter:none}
+.gauge{grid-column:1/-1}
+.gauge .lbl{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.raritybar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.08);margin-top:6px}
+.raritybar i{display:block;height:100%;box-shadow:0 0 8px currentColor}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend em{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend b{font-family:var(--f-mono);font-weight:500;color:var(--white)}
+
+/* toolbar */
+.toolbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;padding-block:12px;margin-top:22px;background:rgba(11,11,15,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-block:1px solid rgba(255,255,255,.08)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--black)}
+.tb-row{display:flex;gap:8px;flex-wrap:wrap}
+.search,.sel{border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:10px 12px;background:#14141B;color:var(--white);min-width:0;max-width:100%}
+.search{flex:1 1 220px}
+.search::placeholder{color:var(--muted)}
+.search:focus,.sel:focus{border-color:var(--volt);outline:none}
+.sel{font-weight:700;font-size:14px}
+.filters{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.fchip{flex:none;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--white);border-radius:0;padding:2px 12px;font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;cursor:pointer}
+.fchip[aria-pressed="true"]{background:var(--volt);border-color:var(--volt);color:var(--black)!important}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:18px;margin-top:22px}
+@media (max-width:420px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+.card{--t:var(--t-colorless);position:relative;background:#14141B;border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:0;cursor:pointer;text-align:left;display:flex;flex-direction:column;overflow:hidden;color:var(--white);transition:transform .2s,box-shadow .2s,border-color .2s}
+.card:hover{transform:translateY(-3px);border-color:var(--volt);box-shadow:0 0 0 1px var(--volt),0 0 26px rgba(232,255,26,.25)}
+.card .top{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 10px;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;min-width:0;border-bottom:1px solid rgba(255,255,255,.06)}
+.card .top .tt{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--white)}
+.card .top .tt::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--t);box-shadow:0 0 8px var(--t)}
+.card .body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:7px}
+.thumb{position:relative;aspect-ratio:63/88;max-width:100%;border-radius:3px;overflow:hidden;background:#0E0E14;display:grid;place-items:center}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .noimg{font-family:var(--f-display);font-style:italic;font-size:32px;color:var(--muted)}
+.card.holo .thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 38%,rgba(240,255,150,.55) 48%,rgba(63,224,255,.35) 54%,transparent 62%);background-size:260% 100%;animation:shine 4s ease-in-out infinite;mix-blend-mode:screen;pointer-events:none}
+@keyframes shine{0%,55%{background-position:130% 0}100%{background-position:-30% 0}}
+.cname{font-weight:700;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.cmeta{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:var(--muted);min-width:0}
+.cmeta .set{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cmeta .set b{font-family:var(--f-mono);font-weight:500;color:var(--volt);letter-spacing:.06em}
+.badge{flex:none;font-family:var(--f-mono);font-size:11px;padding:0 6px;border-radius:2px;color:var(--black)!important;letter-spacing:.06em}
+.qty{font-family:var(--f-mono);font-size:11px;color:var(--volt);flex:none}
+.favmark{position:absolute;top:40px;right:16px;z-index:2;font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;background:var(--volt);color:var(--black);padding:1px 7px;box-shadow:0 0 10px rgba(232,255,26,.6)}
+
+.empty{margin-top:24px;padding-block:28px;padding-inline:20px;text-align:center}
+.empty h2{font-family:var(--f-display);font-style:italic;font-weight:700;font-size:26px;margin:0 0 8px;color:var(--volt)}
+.empty ol{text-align:left;display:inline-block;margin:8px 0 0;padding-left:20px}
+
+/* fab */
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;
+  background:var(--volt);color:var(--black);border:0;border-radius:0;padding:15px 24px;font-weight:900;font-size:15px;letter-spacing:.12em;cursor:pointer;display:flex;align-items:center;gap:8px;
+  clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);box-shadow:0 0 24px rgba(232,255,26,.6);transition:filter .2s}
+.fab:hover{filter:brightness(1.08)}
+.fab svg{width:18px;height:18px}
+
+/* sheet */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center}
+.panel{background:#16161E;color:var(--white);width:100%;max-width:640px;max-height:94vh;max-height:94dvh;overflow-y:auto;border-top:3px solid var(--volt);border-radius:6px 6px 0 0;
+  padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));padding-top:18px;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 50px rgba(232,255,26,.12)}
+@media (min-width:700px){.sheet{align-items:center}.panel{border-radius:4px;max-height:90vh}}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.phead h2{font-family:var(--f-display);font-style:italic;font-weight:700;font-size:24px;margin:0;color:var(--volt)}
+.x{border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--white);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;flex:none}
+
+.photo-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pickbtn{display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:20px 8px;background:#101017;font-weight:700;cursor:pointer;text-align:center;transition:border-color .2s}
+.pickbtn:hover{border-color:var(--volt)}
+.pickbtn svg{width:28px;height:28px;color:var(--volt)}
+.pickbtn:nth-child(2) svg{color:var(--cyan)}
+.pickbtn input{display:none}
+
+.cropper{position:relative;width:100%;max-width:320px;margin:0 auto;aspect-ratio:63/88;border-radius:3px;overflow:hidden;background:#000;touch-action:none;cursor:grab;border:1px solid var(--volt)}
+.cropper canvas{width:100%;height:100%;display:block}
+.cropper .frame{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px var(--volt)}
+.cropper .frame::before{content:"";position:absolute;inset:0;background:
+  linear-gradient(to right,transparent 33.2%,rgba(232,255,26,.4) 33.3%,transparent 33.5%,transparent 66.5%,rgba(232,255,26,.4) 66.6%,transparent 66.8%),
+  linear-gradient(to bottom,transparent 33.2%,rgba(232,255,26,.4) 33.3%,transparent 33.5%,transparent 66.5%,rgba(232,255,26,.4) 66.6%,transparent 66.8%)}
+.crop-tools{display:flex;align-items:center;gap:10px;max-width:320px;margin:12px auto 0}
+.crop-tools input[type=range]{flex:1;accent-color:var(--volt);min-width:0}
+.iconbtn{border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--white);border-radius:3px;padding:6px 10px;cursor:pointer;flex:none;font-size:13px}
+.hint{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+
+form{display:grid;gap:14px;margin-top:18px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:grid;gap:5px;font-size:11px;font-weight:700;letter-spacing:.16em;color:var(--muted);min-width:0}
+label input,label select,label textarea{border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:10px;background:#101017;color:var(--white);font-size:15px;letter-spacing:0;width:100%;min-width:0}
+label input:focus,label select:focus,label textarea:focus{border-color:var(--volt);outline:none}
+label textarea{min-height:64px;resize:vertical}
+.fieldlbl{font-size:11px;font-weight:700;letter-spacing:.16em;color:var(--muted);margin-bottom:6px}
+.rar-pick,.type-pick{display:flex;flex-wrap:wrap;gap:6px}
+.rar-pick button,.type-pick button{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;border:1px solid rgba(255,255,255,.18);border-radius:2px;padding:3px 10px;background:transparent;color:var(--white);cursor:pointer}
+.rar-pick button[aria-pressed="true"],.type-pick button[aria-pressed="true"]{color:var(--black);border-color:transparent;font-weight:700}
+.type-pick button{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-body)}
+.type-pick button i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.favtoggle{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--volt);border-radius:3px;padding:11px;background:transparent;color:var(--volt);font-weight:700;cursor:pointer;font-size:14px;letter-spacing:.06em}
+.favtoggle[aria-pressed="true"]{background:var(--volt);color:var(--black);box-shadow:0 0 18px rgba(232,255,26,.45)}
+.actions{display:flex;gap:10px;margin-top:4px}
+.btn{flex:1;border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:13px;font-weight:700;cursor:pointer;font-size:15px;letter-spacing:.06em;background:transparent;color:var(--white);transition:filter .2s,background .2s}
+.btn.primary{background:var(--volt);border-color:var(--volt);color:var(--black)}
+.btn.moss{background:transparent;border-color:var(--cyan);color:var(--cyan)}
+.btn.danger{background:transparent;border-color:rgba(255,106,61,.6);color:#FF9A7A}
+.btn:hover{filter:brightness(1.12)}
+
+/* detail */
+.detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px}
+@media (max-width:520px){.detail{grid-template-columns:1fr}}
+.detail .frame{max-width:280px;width:100%;margin:0 auto;position:relative}
+.detail .frame img,.detail .frame .thumb{width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px var(--volt),0 0 40px rgba(232,255,26,.25),0 24px 40px rgba(0,0,0,.6)}
+.detail .frame::after{content:"";display:block;height:3px;margin-top:10px;background:var(--t,var(--volt));box-shadow:0 0 10px var(--t,var(--volt))}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:0 16px;margin:0;font-size:14px}
+.dl dt,.dl dd{padding-block:6px;border-bottom:1px solid rgba(255,255,255,.07)}
+.dl dt{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--muted)}
+.dl dd{margin:0;overflow-wrap:anywhere}
+.dname{font-family:var(--f-display);font-style:italic;font-weight:700;font-size:28px;line-height:1.25;margin:0 0 12px;text-wrap:balance}
+.confirm{margin-top:14px;border:1px solid rgba(255,106,61,.6);border-radius:3px;padding:12px;background:rgba(255,106,61,.08)}
+
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(520px,calc(100% - 32px));background:#0E0E14;color:var(--white);padding:12px 18px 12px 46px;border:1px solid var(--volt);border-radius:3px;font-weight:700;font-size:14px;z-index:60;box-shadow:0 0 30px rgba(232,255,26,.3)}
+.toast::before{content:"";position:absolute;left:16px;top:50%;translate:0 -50%;width:16px;height:22px;background:var(--volt);clip-path:polygon(55% 0,0 58%,42% 58%,30% 100%,100% 38%,58% 38%)}
+.menu-list{display:grid;gap:10px}
+.menu-list p{margin:0;font-size:13px;color:var(--muted)}
+
+/* 雷の書体：ワイドで細身の英字に、細い発光線 */
+.z{font-family:"Syncopate","Michroma","Helvetica Neue",Arial,sans-serif;font-style:normal;font-weight:700;letter-spacing:.22em;display:inline-block;text-transform:uppercase;
+  color:var(--white);text-shadow:0 0 12px rgba(232,255,26,.35)}
+.z.sm{font-size:.78em;font-weight:400;letter-spacing:.28em;color:var(--volt);text-shadow:none}
+h1{font-style:normal}
+h1 .z{font-size:clamp(30px,8.4vw,62px);line-height:1.12;letter-spacing:.14em;color:var(--white);font-weight:700;
+  text-shadow:0 0 1px rgba(255,255,255,.9),0 0 22px rgba(232,255,26,.28);animation:zap 7s infinite}
+h1 .z:first-child{color:var(--volt);text-shadow:0 0 24px rgba(232,255,26,.5)}
+h1 .z+br+.z{animation-delay:.1s}
+h1 .bolt{height:.92em;width:.42em;vertical-align:-.08em;margin-inline:.02em .16em;fill:none;stroke:var(--volt);stroke-width:1.4;stroke-linejoin:miter;filter:drop-shadow(0 0 6px rgba(232,255,26,.9))}
+@keyframes zap{0%,93%,100%{opacity:1}94%{opacity:.55}95%{opacity:1}96.5%{opacity:.7}}
+.box-head h2 .z{font-size:17px;letter-spacing:.3em;color:var(--white)}
+.box-head h2{font-style:normal}
+.fab .z{color:var(--black);text-shadow:none;font-size:13px;letter-spacing:.24em}
+.chipbtn{font-family:"Syncopate","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:.3em}
+.badgecase .t .z{color:var(--cyan)}
+.favmark{font-family:"Syncopate","Helvetica Neue",Arial,sans-serif;font-weight:700;font-size:8.5px;letter-spacing:.2em}
+.fc .lv,.card .top,.qty,.badge,.fchip,.box-head span{font-family:"Syncopate","Helvetica Neue",Arial,sans-serif;font-weight:400}
+.fc .lv{font-size:8.5px}
+.sub{font-family:var(--f-body);letter-spacing:.28em}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+</style>
+</head>
+<body>
+
+<div class="sky">
+  <div class="cloud c1" aria-hidden="true"></div><div class="cloud c2" aria-hidden="true"></div><div class="cloud c3" aria-hidden="true"></div>
+  <header class="wrap">
+    <div class="brand">
+      <div>
+        <h1 aria-label="POKECA BINDER"><span class="z">POKECA</span><br><span class="z">B<svg class="bolt" viewBox="0 0 20 40" aria-hidden="true"><path d="M13 0 2 23h7L5 40 18 15h-7z"/></svg>NDER</span></h1>
+        <div class="sub">カード あつめの ぼうけん</div>
+      </div>
+      <button class="chipbtn" id="menuBtn" type="button">SAVE</button>
+    </div>
+  </header>
+</div>
+<div class="wrap main-stack">
+  <section class="box" aria-labelledby="shelfTitle">
+    <div class="box-head"><h2 id="shelfTitle"><span class="z">PARTY</span></h2><span id="shelfCount"></span></div>
+    <div class="party-slots" id="fan"></div>
+    <div id="boxWrap" hidden><div class="boxrow-lbl"><span class="z sm">BOX</span>　パーティの ほかに かざっている カード</div><div class="boxrow" id="boxRow"></div></div>
+  </section>
+  <section class="box" aria-labelledby="trTitle">
+    <div class="box-head"><h2 id="trTitle"><span class="z">COLLECTOR</span></h2><span id="trId"></span></div>
+    <div class="trainer">
+      <dl class="idrow">
+        <dt>ぼうけん かいし</dt><dd id="sSince">—</dd>
+        <dt>さいきん ゲット</dt><dd id="sLast">—</dd>
+        <dt><span class="z sm">HOLO</span></dt><dd id="sHolo">0 しゅ</dd>
+        <dt>いちばん レア</dt><dd id="sTop">—</dd>
+      </dl>
+      <div class="badgecase"><div class="t"><span class="z sm">PACK BADGES</span>　あつめた 型番</div><div class="badges" id="badges"></div></div>
+      <div class="stats" aria-live="polite">
+        <div class="stat"><b id="sTotal">0</b><span>そうまいすう</span></div>
+        <div class="stat"><b id="sKinds">0</b><span>しゅるい</span></div>
+        <div class="stat"><b id="sSets">0</b><span>PACKS</span></div>
+      </div>
+      <div class="gauge"><div class="lbl"><span><span class="z sm">RARITY GAUGE</span></span><span id="gaugeNote"></span></div>
+        <div class="raritybar" id="rBar" aria-hidden="true"></div>
+        <div class="legend" id="rLegend"></div></div>
+    </div>
+  </section>
+</div>
+
+<div class="toolbar">
+  <div class="wrap">
+    <div class="tb-row">
+      <input class="search" id="q" type="search" placeholder="カード名・パック名・番号で検索">
+      <select class="sel" id="setFilter" aria-label="パックで絞り込み"><option value="">すべてのパック</option></select>
+      <select class="sel" id="sort" aria-label="並び順">
+        <option value="new">新しい順</option>
+        <option value="rarity">レア度順</option>
+        <option value="set">パック順</option>
+        <option value="name">名前順</option>
+      </select>
+    </div>
+    <div class="filters" id="rarFilters" role="group" aria-label="レア度で絞り込み"></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+  <div class="empty box" id="empty" hidden>
+    <h2>ぼうけんの はじまり！</h2>
+    <div>右下の「GET CARD」から さいしょの 1まいを とうろくしよう</div>
+    <ol>
+      <li>カードを撮影（または写真を選ぶ）</li>
+      <li>枠に合わせてトリミング</li>
+      <li>レア度と封入パックを入力して保存</li>
+    </ol>
+  </div>
+  <div class="empty box" id="noHit" hidden><h2>みつからなかった…</h2><div>けんさくの じょうけんを かえてみよう</div></div>
+</main>
+
+<button class="fab" id="addBtn" type="button" aria-label="カードを追加">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="z">GET CARD</span>
+</button>
+
+<!-- 追加・編集 -->
+<div class="sheet" id="editSheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="phead"><h2 id="editTitle">カード追加</h2><button class="x" type="button" data-close aria-label="閉じる">×</button></div>
+
+    <div id="pickArea" class="photo-pick">
+      <label class="pickbtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        撮影する
+        <input type="file" id="camInput" accept="image/*" capture="environment">
+      </label>
+      <label class="pickbtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="15.5" cy="8.5" r="1.5"/></svg>
+        写真から選ぶ
+        <input type="file" id="fileInput" accept="image/*">
+      </label>
+    </div>
+
+    <div id="cropArea" hidden>
+      <div class="cropper" id="cropper"><canvas id="cropCanvas" width="630" height="880"></canvas><div class="frame"></div></div>
+      <div class="crop-tools">
+        <button class="iconbtn" type="button" id="rotBtn" aria-label="90度回転">↻</button>
+        <input type="range" id="zoom" min="1" max="4" step="0.01" value="1" aria-label="拡大">
+        <button class="iconbtn" type="button" id="rePick">撮り直す</button>
+      </div>
+      <div class="hint">ドラッグで位置合わせ・スライダー／ピンチで拡大</div>
+    </div>
+    <div id="savedPhoto" hidden style="text-align:center">
+      <div class="thumb" style="max-width:200px;margin:0 auto;border:1px solid var(--gold-2)"><img id="savedImg" alt=""></div>
+      <button class="chipbtn" type="button" id="changePhoto" style="margin-top:10px">写真を変える</button>
+    </div>
+
+    <form id="cardForm" autocomplete="off">
+      <label>カード名<input id="fName" required placeholder="例：ピカチュウex"></label>
+      <div>
+        <div class="fieldlbl">レア度</div>
+        <div class="rar-pick" id="rarPick"></div>
+      </div>
+      <div>
+        <div class="fieldlbl">タイプ</div>
+        <div class="type-pick" id="typePick"></div>
+      </div>
+      <div class="row2" style="grid-template-columns:minmax(0,.8fr) minmax(0,2fr)">
+        <label>型番<input id="fCode" list="codeList" placeholder="例：M6a" autocapitalize="characters" spellcheck="false"><datalist id="codeList"></datalist></label>
+        <label>封入パック名<input id="fSet" list="setList" placeholder="型番を入れると自動入力"><datalist id="setList"></datalist></label>
+      </div>
+      <div class="hint" id="codeHint" style="text-align:left;margin-top:-6px">カード左下の「M6a」などの記号が型番です</div>
+      <div class="row2">
+        <label>カード番号<input id="fNo" placeholder="例：101/100" inputmode="text"></label>
+        <label>枚数<input id="fQty" type="number" min="1" max="999" value="1" inputmode="numeric"></label>
+      </div>
+      <div class="row2">
+        <label>種類
+          <select id="fType"><option>ポケモン</option><option>トレーナーズ</option><option>エネルギー</option></select>
+        </label>
+        <label>状態
+          <select id="fCond"><option>美品</option><option>良品</option><option>傷あり</option><option>スリーブ保管</option><option>ローダー保管</option></select>
+        </label>
+      </div>
+      <button type="button" class="favtoggle" id="fFav" aria-pressed="false">☆ PARTY に いれる</button>
+      <label>入手日<input id="fDate" type="date"></label>
+      <label>メモ<textarea id="fMemo" placeholder="開封した店、交換相手など"></textarea></label>
+      <div class="actions">
+        <button class="btn ghost" type="button" data-close>キャンセル</button>
+        <button class="btn primary" type="submit" id="saveBtn">保存する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 詳細 -->
+<div class="sheet" id="detailSheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="dName">
+    <div class="phead"><span class="badge" id="dBadge"></span><button class="x" type="button" data-close aria-label="閉じる">×</button></div>
+    <div class="detail">
+      <div class="frame" id="dThumb"></div>
+      <div style="min-width:0">
+        <h2 class="dname" id="dName"></h2>
+        <dl class="dl" id="dList"></dl>
+      </div>
+    </div>
+    <div class="confirm" id="delConfirm" hidden>
+      このカードを削除しますか？元に戻せません。
+      <div class="actions" style="margin-top:10px">
+        <button class="btn ghost" type="button" id="delNo">やめる</button>
+        <button class="btn danger" type="button" id="delYes">削除する</button>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:16px" id="dActions">
+      <button class="btn danger" type="button" id="delBtn" style="flex:.6">削除</button>
+      <button class="btn" type="button" id="dFav">ディスプレイに飾る</button>
+      <button class="btn primary" type="button" id="editBtn" style="flex:.8">編集</button>
+    </div>
+  </div>
+</div>
+
+<!-- バックアップ -->
+<div class="sheet" id="menuSheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+    <div class="phead"><h2 id="menuTitle">バックアップ</h2><button class="x" type="button" data-close aria-label="閉じる">×</button></div>
+    <div class="menu-list">
+      <p>データはこの端末のブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておくと安心です。</p>
+      <button class="btn primary" type="button" id="exportBtn">ファイルに書き出す（写真込み）</button>
+      <label class="btn ghost" style="text-align:center;display:block;letter-spacing:0;font-size:15px">ファイルから読み込む
+        <input type="file" id="importInput" accept="application/json,.json" hidden>
+      </label>
+      <p id="storageInfo"></p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+"use strict";
+const RAR = [
+  {k:"C",   c:"#B8BCC8"},
+  {k:"U",   c:"#3FBF8A"},
+  {k:"R",   c:"#2F8FE4"},
+  {k:"RR",  c:"#7B5CE0"},
+  {k:"RRR", c:"#B24FD6"},
+  {k:"AR",  c:"#F08A24"},
+  {k:"SR",  c:"#F2453D"},
+  {k:"SAR", c:"#E0207A"},
+  {k:"UR",  c:"#E8B500"},
+  {k:"ACE", c:"#14A3C7"},
+  {k:"S",   c:"#56B947"},
+  {k:"SSR", c:"#EE7FB9"},
+  {k:"CHR", c:"#8A6CF0"},
+  {k:"CSR", c:"#FF6F61"},
+  {k:"K",   c:"#C9A227"},
+  {k:"PR",  c:"#C9C9D6"},
+];
+/* 型番 → パック名（2026年10月時点）。ここにない型番は、入力して保存すると次回から自動で候補になります */
+const SETS = {
+  "M6a":"拡張パック 30th CELEBRATION","M6":"拡張パック ストームエメラルダ","M5":"拡張パック アビスアイ",
+  "M4":"拡張パック ニンジャスピナー","M3":"拡張パック ムニキスゼロ","M2a":"ハイクラスパック MEGAドリームex",
+  "M2":"拡張パック インフェルノX","M1L":"拡張パック メガブレイブ","M1S":"拡張パック メガシンフォニア",
+  "SV11B":"拡張パック ブラックボルト","SV11W":"拡張パック ホワイトフレア","SV10":"拡張パック ロケット団の栄光",
+  "SV9a":"強化拡張パック 熱風のアリーナ","SV9":"拡張パック バトルパートナーズ","SV8a":"ハイクラスパック テラスタルフェスex",
+  "SV8":"拡張パック 超電ブレイカー","SV7a":"強化拡張パック 楽園ドラゴーナ","SV7":"拡張パック ステラミラクル",
+  "SV6a":"強化拡張パック ナイトワンダラー","SV6":"拡張パック 変幻の仮面","SV5a":"強化拡張パック クリムゾンヘイズ",
+  "SV5K":"拡張パック ワイルドフォース","SV5M":"拡張パック サイバージャッジ","SV4a":"ハイクラスパック シャイニートレジャーex",
+  "SV4K":"拡張パック 古代の咆哮","SV4M":"拡張パック 未来の一閃","SV3a":"強化拡張パック レイジングサーフ",
+  "SV3":"拡張パック 黒炎の支配者","SV2a":"強化拡張パック ポケモンカード151","SV2P":"拡張パック スノーハザード",
+  "SV2D":"拡張パック クレイバースト","SV1a":"強化拡張パック トリプレットビート","SV1S":"拡張パック スカーレットex",
+  "SV1V":"拡張パック バイオレットex",
+};
+let userSets = {};
+try{userSets=JSON.parse(localStorage.getItem("pokeca-userSets")||"{}")}catch(e){}
+const normCode = s => s.trim().replace(/\s+/g,"");
+function lookupSet(code){
+  const c = normCode(code); if(!c) return "";
+  const all = {...SETS,...userSets};
+  const hit = Object.keys(all).find(k=>k.toLowerCase()===c.toLowerCase());
+  return hit ? {code:hit,name:all[hit]} : null;
+}
+const ELEMS = [
+  {k:"grass",n:"くさ",v:"var(--t-grass)"},{k:"fire",n:"ほのお",v:"var(--t-fire)"},{k:"water",n:"みず",v:"var(--t-water)"},
+  {k:"lightning",n:"かみなり",v:"var(--t-lightning)"},{k:"psychic",n:"ちょう",v:"var(--t-psychic)"},{k:"fighting",n:"とう",v:"var(--t-fighting)"},
+  {k:"dark",n:"あく",v:"var(--t-dark)"},{k:"metal",n:"はがね",v:"var(--t-metal)"},{k:"dragon",n:"ドラゴン",v:"var(--t-dragon)"},
+  {k:"fairy",n:"フェアリー",v:"var(--t-fairy)"},{k:"colorless",n:"むしょく",v:"var(--t-colorless)"},
+];
+const ELEM = Object.fromEntries(ELEMS.map(e=>[e.k,e]));
+const tVar = c => c.elem&&ELEM[c.elem] ? ELEM[c.elem].v : (c.type==="トレーナーズ"?"var(--blue)":c.type==="エネルギー"?"var(--yellow)":"var(--t-colorless)");
+const tName = c => c.elem&&ELEM[c.elem] ? ELEM[c.elem].n : (c.type||"");
+const BADGE_COLORS=["#FFD23F","#7FD3FF","#9BE07A","#FFA3C7","#C7B2FF","#FFB067","#A6F0E0","#F7E27A"];
+const HOLO = new Set(["RR","RRR","AR","SR","SAR","UR","ACE","S","SSR","CHR","CSR","K"]);
+const RIDX =Object.fromEntries(RAR.map((r,i)=>[r.k,i]));
+const rColor = k => (RAR[RIDX[k]]||{c:"#121212"}).c;
+const $ = id => document.getElementById(id);
+
+/* ---------- storage (IndexedDB, falls back to memory) ---------- */
+let idb = null, mem = new Map();
+function openDB(){
+  return new Promise(res=>{
+    try{
+      const r = indexedDB.open("pokeca-binder",1);
+      r.onupgradeneeded = () => r.result.createObjectStore("cards",{keyPath:"id"});
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => res(null);
+    }catch(e){res(null)}
+  });
+}
+function tx(mode){return idb.transaction("cards",mode).objectStore("cards")}
+const store = {
+  all(){ if(!idb) return Promise.resolve([...mem.values()]);
+    return new Promise((res,rej)=>{const q=tx("readonly").getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+  put(c){ if(!idb){mem.set(c.id,c);return Promise.resolve()}
+    return new Promise((res,rej)=>{const q=tx("readwrite").put(c);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})},
+  del(id){ if(!idb){mem.delete(id);return Promise.resolve()}
+    return new Promise((res,rej)=>{const q=tx("readwrite").delete(id);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})},
+};
+
+let cards = [];
+const state = {q:"", set:"", rar:new Set(), sort:"new"};
+
+/* ---------- render ---------- */
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function render(){
+  const total = cards.reduce((a,c)=>a+(+c.qty||1),0);
+  const sets = [...new Set(cards.map(c=>c.set).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  const favs = cards.filter(c=>c.fav).sort((a,b)=>(a.favAt||a.updated)-(b.favAt||b.updated));
+  const slot = c=>`<button type="button" class="fc" data-id="${c.id}" style="--t:${tVar(c)}">
+        <span class="lv">${esc(c.rarity||tName(c))}</span>
+        ${c.img?`<img src="${c.img}" alt="${esc(c.name)}">`:`<span class="ph">?</span>`}
+        <span class="cap">${esc(c.name)}</span></button>`;
+  const party = favs.slice(0,6), rest = favs.slice(6);
+  $("shelfCount").textContent = `${party.length}/6${rest.length?`　BOX ${rest.length}`:""}`;
+  $("fan").innerHTML = party.map(slot).join("") + Array.from({length:6-party.length},(_,i)=>`<div class="slot-empty">${i===0&&!party.length?"カードを ひらいて<br>「PARTY に いれる」":"あき"}</div>`).join("");
+  $("boxWrap").hidden = !rest.length; $("boxRow").innerHTML = rest.map(slot).join("");
+  // notebook
+  let cid=""; try{cid=localStorage.getItem("pokeca-cid")||"";if(!cid){cid=String(Math.floor(Math.random()*90000)+10000);localStorage.setItem("pokeca-cid",cid)}}catch(e){cid="00000"}
+  $("trId").textContent = `ID No.${cid}`;
+  const dates = cards.map(c=>c.date).filter(Boolean).sort();
+  $("sSince").textContent = dates[0] ? dates[0].replaceAll("-","/") : "—";
+  const latest = [...cards].sort((a,b)=>b.created-a.created)[0];
+  $("sLast").textContent = latest ? latest.name : "—";
+  $("sHolo").textContent = `${cards.filter(c=>HOLO.has(c.rarity)).length} しゅ`;
+  const topR = [...new Set(cards.map(c=>c.rarity).filter(r=>r in RIDX))].sort((a,b)=>RIDX[b]-RIDX[a])[0];
+  $("sTop").textContent = topR || "—";
+  const owned = [...new Set(cards.map(c=>c.code).filter(Boolean))];
+  const hash = s=>[...s].reduce((a,ch)=>a+ch.charCodeAt(0),0);
+  $("badges").innerHTML = owned.length ? owned.map(c=>`<div class="bdg" style="--bc:${BADGE_COLORS[hash(c)%BADGE_COLORS.length]}" title="${esc((lookupSet(c)||{}).name||c)}"><span>${esc(c)}</span></div>`).join("")
+    : Array.from({length:8},()=>`<div class="bdg off"><span>?</span></div>`).join("");
+  $("sTotal").textContent = total; $("sKinds").textContent = cards.length; $("sSets").textContent = sets.length;
+
+  // rarity breakdown
+  const cnt = {}; cards.forEach(c=>{cnt[c.rarity||"—"]=(cnt[c.rarity||"—"]||0)+(+c.qty||1)});
+  const present = RAR.filter(r=>cnt[r.k]);
+  $("rBar").innerHTML = total ? present.map(r=>`<i style="width:${cnt[r.k]/total*100}%;background:${r.c}"></i>`).join("") : "";
+  $("rLegend").innerHTML = present.map(r=>`<span><em style="background:${r.c}"></em>${r.k} <b>${cnt[r.k]}</b></span>`).join("");
+  $("gaugeNote").textContent = total ? `${total} まい` : "まだ 0 まい";
+
+  // set filter + datalist
+  const sf = $("setFilter"), cur = state.set;
+  sf.innerHTML = `<option value="">すべてのパック</option>` + sets.map(s=>`<option ${s===cur?"selected":""}>${esc(s)}</option>`).join("");
+  if(cur && !sets.includes(cur)) state.set="";
+  $("setList").innerHTML = sets.map(s=>`<option value="${esc(s)}">`).join("");
+  $("codeList").innerHTML = Object.entries({...SETS,...userSets}).map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join("");
+
+  // rarity filter chips
+  $("rarFilters").innerHTML = RAR.filter(r=>cnt[r.k]||state.rar.has(r.k)).map(r=>
+    `<button type="button" class="fchip" data-r="${r.k}" aria-pressed="${state.rar.has(r.k)}" style="${state.rar.has(r.k)?`background:${r.c};color:#fff`:""}">${r.k}</button>`).join("");
+
+  // list
+  const q = state.q.trim().toLowerCase();
+  let list = cards.filter(c=>{
+    if(state.set && c.set!==state.set) return false;
+    if(state.rar.size && !state.rar.has(c.rarity)) return false;
+    if(q && !(`${c.name} ${c.code||""} ${c.set} ${c.no} ${c.memo}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const by = {
+    new:(a,b)=>b.created-a.created,
+    rarity:(a,b)=>(RIDX[b.rarity]??-1)-(RIDX[a.rarity]??-1)||a.name.localeCompare(b.name,"ja"),
+    set:(a,b)=>(a.set||"").localeCompare(b.set||"","ja")||(a.no||"").localeCompare(b.no||"",undefined,{numeric:true}),
+    name:(a,b)=>a.name.localeCompare(b.name,"ja"),
+  }[state.sort];
+  list.sort(by);
+
+  $("empty").hidden = cards.length>0;
+  $("noHit").hidden = !(cards.length>0 && list.length===0);
+  $("grid").innerHTML = list.map(c=>`
+    <button type="button" class="card${HOLO.has(c.rarity)?" holo":""}" data-id="${c.id}" style="--t:${tVar(c)}">
+      <div class="top"><span class="tt">${esc(tName(c))}</span>${(+c.qty||1)>1?`<span class="qty">×${+c.qty}</span>`:""}</div>
+      ${c.fav?`<span class="favmark">PARTY</span>`:""}
+      <div class="body">
+        <div class="thumb">${c.img?`<img src="${c.img}" alt="${esc(c.name)}" loading="lazy">`:`<span class="noimg">?</span>`}</div>
+        <div class="cname">${esc(c.name)}</div>
+        <div class="cmeta"><span class="set">${c.code?`<b>${esc(c.code)}</b> `:""}${esc(c.set||"パック みにゅうりょく")}${c.no?` · ${esc(c.no)}`:""}</span>
+          ${c.rarity?`<span class="badge" style="background:${rColor(c.rarity)}">${c.rarity}</span>`:""}</div>
+      </div>
+    </button>`).join("");
+}
+
+/* ---------- sheets ---------- */
+function openSheet(id){$(id).hidden=false;document.body.style.overflow="hidden"}
+function closeSheet(id){$(id).hidden=true;if([...document.querySelectorAll(".sheet")].every(s=>s.hidden))document.body.style.overflow=""}
+document.querySelectorAll(".sheet").forEach(s=>{
+  s.addEventListener("click",e=>{ if(e.target===s || e.target.closest("[data-close]")) closeSheet(s.id) });
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") document.querySelectorAll(".sheet:not([hidden])").forEach(s=>closeSheet(s.id)) });
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2200)}
+
+/* ---------- cropper ---------- */
+const cv = $("cropCanvas"), ctx = cv.getContext("2d");
+const crop = {img:null, rot:0, zoom:1, ox:0, oy:0};
+function baseScale(){
+  const w = crop.rot%180 ? crop.img.height : crop.img.width;
+  const h = crop.rot%180 ? crop.img.width : crop.img.height;
+  return Math.max(cv.width/w, cv.height/h);
+}
+function clampOffset(){
+  const s = baseScale()*crop.zoom;
+  const w = (crop.rot%180 ? crop.img.height : crop.img.width)*s;
+  const h = (crop.rot%180 ? crop.img.width : crop.img.height)*s;
+  const mx = Math.max(0,(w-cv.width)/2), my = Math.max(0,(h-cv.height)/2);
+  crop.ox = Math.min(mx,Math.max(-mx,crop.ox)); crop.oy = Math.min(my,Math.max(-my,crop.oy));
+}
+function draw(){
+  if(!crop.img) return;
+  clampOffset();
+  const s = baseScale()*crop.zoom;
+  ctx.fillStyle="#222";ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.save();
+  ctx.translate(cv.width/2+crop.ox, cv.height/2+crop.oy);
+  ctx.rotate(crop.rot*Math.PI/180);
+  ctx.drawImage(crop.img, -crop.img.width*s/2, -crop.img.height*s/2, crop.img.width*s, crop.img.height*s);
+  ctx.restore();
+}
+function loadFile(file){
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  const im = new Image();
+  im.onload = () => {
+    // 大きすぎる写真は縮小して扱う
+    const max = 2000, k = Math.min(1, max/Math.max(im.width,im.height));
+    let src = im;
+    if(k<1){const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);src=c}
+    crop.img=src;crop.rot=0;crop.zoom=1;crop.ox=0;crop.oy=0;$("zoom").value=1;
+    $("pickArea").hidden=true;$("savedPhoto").hidden=true;$("cropArea").hidden=false;
+    draw(); URL.revokeObjectURL(url);
+  };
+  im.onerror = () => {toast("この画像は読み込めませんでした。JPEGかPNGで試してください");URL.revokeObjectURL(url)};
+  im.src = url;
+}
+$("camInput").addEventListener("change",e=>{loadFile(e.target.files[0]);e.target.value=""});
+$("fileInput").addEventListener("change",e=>{loadFile(e.target.files[0]);e.target.value=""});
+$("rotBtn").addEventListener("click",()=>{crop.rot=(crop.rot+90)%360;crop.ox=crop.oy=0;draw()});
+$("zoom").addEventListener("input",e=>{crop.zoom=+e.target.value;draw()});
+$("rePick").addEventListener("click",()=>{crop.img=null;$("cropArea").hidden=true;$("pickArea").hidden=false});
+$("changePhoto").addEventListener("click",()=>{editing.keepImg=false;$("savedPhoto").hidden=true;$("pickArea").hidden=false});
+
+const ptrs = new Map(); let pinch0=null;
+const cropper = $("cropper");
+cropper.addEventListener("pointerdown",e=>{cropper.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch0={d:Math.hypot(a.x-b.x,a.y-b.y),z:crop.zoom}}});
+cropper.addEventListener("pointermove",e=>{
+  if(!ptrs.has(e.pointerId)||!crop.img) return;
+  const p=ptrs.get(e.pointerId), ratio=cv.width/cropper.clientWidth;
+  if(ptrs.size===1){crop.ox+=(e.clientX-p.x)*ratio;crop.oy+=(e.clientY-p.y)*ratio}
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2&&pinch0){const [a,b]=[...ptrs.values()];crop.zoom=Math.min(4,Math.max(1,pinch0.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch0.d));$("zoom").value=crop.zoom}
+  draw();
+});
+const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=null};
+cropper.addEventListener("pointerup",up);cropper.addEventListener("pointercancel",up);
+cropper.addEventListener("wheel",e=>{e.preventDefault();crop.zoom=Math.min(4,Math.max(1,crop.zoom-e.deltaY*0.002));$("zoom").value=crop.zoom;draw()},{passive:false});
+function cropResult(){
+  const out=document.createElement("canvas");out.width=504;out.height=704;
+  out.getContext("2d").drawImage(cv,0,0,out.width,out.height);
+  return out.toDataURL("image/jpeg",0.86);
+}
+
+/* ---------- edit form ---------- */
+let editing = {id:null, rarity:"", keepImg:false, img:null, fav:false};
+function renderFav(){const b=$("fFav");b.setAttribute("aria-pressed",editing.fav);b.textContent=editing.fav?"★ PARTY に いれている":"☆ PARTY に いれる"}
+$("fFav").addEventListener("click",()=>{editing.fav=!editing.fav;renderFav()});
+function renderTypePick(){
+  $("typePick").innerHTML = ELEMS.map(e=>`<button type="button" data-e="${e.k}" aria-pressed="${editing.elem===e.k}" style="${editing.elem===e.k?`background:${e.v}`:""}"><i style="background:${e.v}"></i>${e.n}</button>`).join("");
+}
+$("typePick").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;editing.elem=editing.elem===b.dataset.e?"":b.dataset.e;renderTypePick()});
+function renderRarPick(){
+  $("rarPick").innerHTML = RAR.map(r=>`<button type="button" data-r="${r.k}" aria-pressed="${editing.rarity===r.k}" style="${editing.rarity===r.k?`background:${r.c}`:""}">${r.k}</button>`).join("");
+}
+$("rarPick").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;editing.rarity=editing.rarity===b.dataset.r?"":b.dataset.r;renderRarPick()});
+function openEdit(c){
+  editing = {id:c?.id||null, rarity:c?.rarity||"", keepImg:!!c?.img, img:c?.img||null, fav:!!c?.fav, elem:c?.elem||""}; renderFav(); renderTypePick();
+  $("editTitle").textContent = c ? "カードを編集" : "カード追加";
+  $("fName").value=c?.name||""; $("fCode").value=c?.code||(c?"":lastCode);
+  $("fSet").value=c?.set||(c?"":lastSetName()); autoSet=false; updateCodeHint(); $("fNo").value=c?.no||"";
+  $("fQty").value=c?.qty||1; $("fType").value=c?.type||"ポケモン"; $("fCond").value=c?.cond||"美品";
+  $("fDate").value=c?.date||new Date(Date.now()+9*3600e3).toISOString().slice(0,10); $("fMemo").value=c?.memo||"";
+  crop.img=null; $("cropArea").hidden=true;
+  if(editing.keepImg){$("savedImg").src=c.img;$("savedPhoto").hidden=false;$("pickArea").hidden=true}
+  else{$("savedPhoto").hidden=true;$("pickArea").hidden=false}
+  renderRarPick(); openSheet("editSheet");
+}
+let lastSet = "", lastCode = "";
+try{lastSet=localStorage.getItem("pokeca-lastSet")||"";lastCode=localStorage.getItem("pokeca-lastCode")||""}catch(e){}
+function lastSetName(){ if(state.set) return state.set; const h=lastCode&&lookupSet(lastCode); return h?h.name:lastSet }
+let autoSet=false;
+function updateCodeHint(){
+  const v=$("fCode").value, h=lookupSet(v);
+  $("codeHint").textContent = !normCode(v) ? "カード左下の「M6a」などの記号が型番です"
+    : h ? `${h.code} ＝ ${h.name}` : "未登録の型番です。パック名を入れて保存すると次回から自動入力されます";
+}
+$("fCode").addEventListener("input",()=>{
+  const h=lookupSet($("fCode").value);
+  if(h && (!$("fSet").value.trim() || autoSet || Object.values({...SETS,...userSets}).includes($("fSet").value.trim()))){$("fSet").value=h.name;autoSet=true}
+  updateCodeHint();
+});
+$("fSet").addEventListener("input",()=>{autoSet=false});
+$("addBtn").addEventListener("click",()=>openEdit(null));
+$("cardForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const old = cards.find(c=>c.id===editing.id);
+  const img = crop.img ? cropResult() : (editing.keepImg ? editing.img : null);
+  const c = {
+    id: editing.id || ("c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
+    code: (lookupSet($("fCode").value)||{}).code || normCode($("fCode").value),
+    name: $("fName").value.trim(), rarity: editing.rarity, set: $("fSet").value.trim(), no: $("fNo").value.trim(),
+    qty: Math.max(1,parseInt($("fQty").value,10)||1), type: $("fType").value, cond: $("fCond").value,
+    elem: editing.elem||"", fav: editing.fav, favAt: editing.fav ? (old?.fav ? old.favAt||old.updated : Date.now()) : null, date: $("fDate").value, memo: $("fMemo").value.trim(), img, created: old?.created || Date.now(), updated: Date.now()
+  };
+  try{
+    await store.put(c);
+    cards = cards.filter(x=>x.id!==c.id).concat(c);
+    if(c.set){lastSet=c.set;try{localStorage.setItem("pokeca-lastSet",c.set)}catch(e){}}
+    lastCode=c.code;try{localStorage.setItem("pokeca-lastCode",c.code)}catch(e){}
+    if(c.code && c.set && !SETS[c.code]){userSets[c.code]=c.set;try{localStorage.setItem("pokeca-userSets",JSON.stringify(userSets))}catch(e){}}
+    closeSheet("editSheet"); render(); toast(old?`${c.name}の データを かきかえた！`:`${c.name}を ゲットした！`);
+  }catch(err){toast("保存できませんでした。端末の空き容量を確認してください")}
+});
+
+/* ---------- detail ---------- */
+let viewing=null;
+$("grid").addEventListener("click",e=>{const b=e.target.closest(".card");if(b)openDetail(b.dataset.id)});
+$("fan").addEventListener("click",e=>{const b=e.target.closest(".fc");if(b)openDetail(b.dataset.id)});
+$("boxRow").addEventListener("click",e=>{const b=e.target.closest(".fc");if(b)openDetail(b.dataset.id)});
+function openDetail(id){
+  const c = cards.find(x=>x.id===id); if(!c) return; viewing=c;
+  $("dBadge").textContent=c.rarity||"レア度なし"; $("dBadge").style.background=c.rarity?rColor(c.rarity):"var(--muted)";
+  $("dThumb").innerHTML = c.img?`<img src="${c.img}" alt="${esc(c.name)}">`:`<div class="thumb"><span class="noimg">?</span></div>`;
+  $("dName").textContent=c.name; renderDetailFav();
+  $("dThumb").style.setProperty("--t",tVar(c));
+  const rows=[["タイプ",tName(c)||"—"],["レア度",c.rarity||"—"],["型番",c.code||"—"],["封入パック",c.set||"—"],["番号",c.no||"—"],["枚数",(c.qty||1)+"枚"],["種類",c.type],["状態",c.cond],["入手日",c.date||"—"],["メモ",c.memo||"—"]];
+  $("dList").innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
+  $("delConfirm").hidden=true;$("dActions").hidden=false;
+  openSheet("detailSheet");
+}
+$("editBtn").addEventListener("click",()=>{closeSheet("detailSheet");openEdit(viewing)});
+function renderDetailFav(){const b=$("dFav");b.textContent=viewing.fav?"PARTY から はずす":"PARTY に いれる";b.className="btn "+(viewing.fav?"":"moss")}
+$("dFav").addEventListener("click",async()=>{
+  const c={...viewing,fav:!viewing.fav,favAt:!viewing.fav?Date.now():null};
+  try{await store.put(c);cards=cards.map(x=>x.id===c.id?c:x);viewing=c;renderDetailFav();render();toast(c.fav?`${c.name}を PARTY に いれた！`:`${c.name}を PARTY から はずした`)}catch(e){toast("保存できませんでした")}
+});
+$("delBtn").addEventListener("click",()=>{$("delConfirm").hidden=false;$("dActions").hidden=true});
+$("delNo").addEventListener("click",()=>{$("delConfirm").hidden=true;$("dActions").hidden=false});
+$("delYes").addEventListener("click",async()=>{await store.del(viewing.id);cards=cards.filter(c=>c.id!==viewing.id);closeSheet("detailSheet");render();toast("カードを にがした…")});
+
+/* ---------- toolbar ---------- */
+$("q").addEventListener("input",e=>{state.q=e.target.value;render()});
+$("setFilter").addEventListener("change",e=>{state.set=e.target.value;render()});
+$("sort").addEventListener("change",e=>{state.sort=e.target.value;render()});
+$("rarFilters").addEventListener("click",e=>{const b=e.target.closest(".fchip");if(!b)return;const k=b.dataset.r;state.rar.has(k)?state.rar.delete(k):state.rar.add(k);render()});
+
+/* ---------- backup ---------- */
+$("menuBtn").addEventListener("click",async()=>{
+  let info = idb ? "保存先：この端末のブラウザ（IndexedDB）" : "注意：この環境では保存できないため、ページを閉じると消えます。書き出しを使ってください。";
+  try{ if(navigator.storage?.estimate){const est=await navigator.storage.estimate();info+=` ／ 使用量 約${(est.usage/1048576).toFixed(1)}MB`} }catch(e){}
+  $("storageInfo").textContent=info; openSheet("menuSheet");
+});
+$("exportBtn").addEventListener("click",()=>{
+  const blob = new Blob([JSON.stringify({app:"pokeca-binder",version:1,exported:new Date().toISOString(),cards},null,0)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`pokeca-binder-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast(`${cards.length}種類を書き出しました`);
+});
+$("importInput").addEventListener("change",async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{
+    const data=JSON.parse(await f.text());
+    const list=Array.isArray(data)?data:data.cards;
+    if(!Array.isArray(list)) throw 0;
+    let n=0;
+    for(const c of list){ if(c&&c.id&&c.name){await store.put(c);n++} }
+    cards=await store.all(); closeSheet("menuSheet"); render(); toast(`${n}件を読み込みました`);
+  }catch(err){toast("読み込めませんでした。このアプリで書き出したファイルを選んでください")}
+});
+
+/* ---------- boot ---------- */
+(async()=>{
+  idb = await openDB();
+  try{ cards = await store.all() }catch(e){ cards=[] }
+  render();
+})();
+})();
+</script>
+</body>
+</html>
